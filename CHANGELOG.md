@@ -2,6 +2,12 @@
 
 All notable changes to OLED Noir are listed here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/).
 
+## [1.0.1] - 2026-11-24
+
+### Changed
+
+- Your own messages now start with the `outline` bubble: black with a thin gray edge.
+
 ## [1.0.0] - 2026-11-24
 
 The first public release.
@@ -19,4 +25,5 @@ The first public release.
   - `/noir tools`: seven looks for tool call rows.
 - A true-black palette: a `#000000` page, soft white text, and faintly tinted status colors.
 
+[1.0.1]: https://github.com/Draganoider/oled-noir/releases/tag/v1.0.1
 [1.0.0]: https://github.com/Draganoider/oled-noir/releases/tag/v1.0.0

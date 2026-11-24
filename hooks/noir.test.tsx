@@ -80,13 +80,13 @@ test('every see-through backing fades out with a shadow inside the allowed range
   }
 })
 
-test('your messages use the soft bubble by default, and each kind reaches the theme', () => {
+test('your messages use the outline bubble by default, and each kind reaches the theme', () => {
   const eclipse = VARIANTS.find(variant => variant.id === 'eclipse')!
 
   expect(lookOf(eclipse, false, true).style?.UserMessage).toEqual({
     paddingX: 14,
     paddingY: 10,
-    ...USER_BUBBLES.soft,
+    ...USER_BUBBLES.outline,
   })
 
   for (const [name, rule] of Object.entries(USER_BUBBLES)) {

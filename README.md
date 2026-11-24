@@ -116,7 +116,7 @@ Your choices are kept for every session and every project.
 
 ## Make it yours
 
-A fresh install starts on **Deep Field**, with **bare** glass, **smoky** text, **soft** bubbles and **pill** tool rows. Each part can be changed on its own.
+A fresh install starts on **Deep Field**, with **bare** glass, **smoky** text, **outline** bubbles and **pill** tool rows. Each part can be changed on its own.
 
 <details open>
 <summary><b>Panels</b> · <code>/noir glass</code> · the glass the app lays over the scene behind the chat</summary>
@@ -155,9 +155,9 @@ A fresh install starts on **Deep Field**, with **bare** glass, **smoky** text, *
 
 | Kind | Looks like |
 | --- | --- |
-| `outline` | A black bubble with a thin gray outline |
+| `outline` ✦ | A black bubble with a thin gray outline |
 | `ring` | A black pill with a bright white outline |
-| `soft` ✦ | Nearly black with smoky, fading edges |
+| `soft` | Nearly black with smoky, fading edges |
 | `glass` | A faint white tint with a light edge, like frosted glass |
 | `inverted` | A white bubble with black words, so your messages stand out |
 | `none` | No bubble: your words sit right on the scene |

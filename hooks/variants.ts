@@ -129,7 +129,7 @@ export const BUBBLE_NOTES: Record<UserBubble, string> = {
   none: 'no bubble: your words sit right on the scene',
 }
 
-export const DEFAULT_BUBBLE: UserBubble = 'soft'
+export const DEFAULT_BUBBLE: UserBubble = 'outline'
 
 export function isUserBubble(text: unknown): text is UserBubble {
   return typeof text === 'string' && Object.hasOwn(USER_BUBBLES, text)
