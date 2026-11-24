@@ -41,12 +41,12 @@ test('the look is true black and dark, with a scene or a black ground', () => {
     expect(look.colors?.inputs.light).toBeUndefined()
     expect(look.colors?.inputs.dark).toBeDefined()
     expect(look.backdrop).toEqual(
-      variant.scene === undefined ? { color: '#000000' } : { scene: variant.id, glass: GLASS_LEVELS.frosted },
+      variant.scene === undefined ? { color: '#000000' } : { scene: variant.id, glass: GLASS_LEVELS.bare },
     )
   }
 })
 
-test('the panels default to the original frosted glass, and the kinds run from none to solid', () => {
+test('the original frosted glass is kept, and the kinds run from none to solid', () => {
   expect(GLASS_LEVELS.frosted).toEqual({ blur: 14, tint: '#000000', opacity: 0.74 })
   expect(Object.keys(GLASS_LEVELS)[0]).toBe('none')
   expect(GLASS_LEVELS.none).toBe(false)
@@ -60,9 +60,9 @@ test('no glass reaches the theme as false', () => {
   expect(lookOf(variant ?? VARIANTS[0]!, false, true, 'none').backdrop).toEqual({ scene: 'eclipse', glass: false })
 })
 
-test('a stored glass level is used, and an unknown one falls back to frosted', async ($, on) => {
+test('a stored glass level is used, and an unknown one falls back to bare', async ($, on) => {
   const sets: ThemeSetArgs[] = []
-  let glass: unknown = 'bare'
+  let glass: unknown = 'smoke'
 
   on('command.register', () => ({ value: { command: 'noir' } }))
   on('store.get', (_, e) => ({ value: e.key === 'glass' ? glass : 'deep-field' }))
@@ -78,12 +78,12 @@ test('a stored glass level is used, and an unknown one falls back to frosted', a
   await $.session.start({ cwd: '/', surface: 'desktop', isInteractive: true })
 
   expect(sets.map(set => set.backdrop)).toEqual([
+    { scene: 'deep-field', glass: GLASS_LEVELS.smoke },
     { scene: 'deep-field', glass: GLASS_LEVELS.bare },
-    { scene: 'deep-field', glass: GLASS_LEVELS.frosted },
   ])
 })
 
-test('the session starts on Eclipse when nothing was chosen', async ($, on) => {
+test('the session starts on Deep Field with bare glass when nothing was chosen', async ($, on) => {
   const sets: ThemeSetArgs[] = []
 
   on('command.register', () => ({ value: { command: 'noir' } }))
@@ -98,7 +98,7 @@ test('the session starts on Eclipse when nothing was chosen', async ($, on) => {
   await $.session.start({ cwd: '/', surface: 'desktop', isInteractive: true })
 
   expect(sets).toHaveLength(1)
-  expect(sets[0]?.backdrop).toEqual({ scene: 'eclipse', glass: GLASS_LEVELS.frosted })
+  expect(sets[0]?.backdrop).toEqual({ scene: 'deep-field', glass: GLASS_LEVELS.bare })
   expect(sets[0]?.style?.UserMessage).toBeDefined()
 })
 

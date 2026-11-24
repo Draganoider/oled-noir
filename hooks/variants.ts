@@ -21,8 +21,8 @@ export type Variant = {
 
 /**
  * The glass the app lays over the scene behind its own panels, from barely there to solid. Blur smears the
- * scene's thin white lines into a haze that reads as black, so the clearer kinds blur little. Frosted is the
- * look the mod started with. The order here is the order /noir lists and the card shows.
+ * scene's thin white lines into a haze that reads as black, so the clearer kinds blur little. Bare is the
+ * default; frosted is the look the mod started with. The order here is the order /noir lists and the card shows.
  */
 export const GLASS_LEVELS = {
   none: false,
@@ -53,7 +53,7 @@ export const GLASS_NOTES: Record<GlassLevel, string> = {
   solid: 'black panels, nothing shows through',
 }
 
-export const DEFAULT_GLASS: GlassLevel = 'frosted'
+export const DEFAULT_GLASS: GlassLevel = 'bare'
 
 /** A level's name with a capital, for buttons. */
 export function glassWord(level: GlassLevel): string {
@@ -171,7 +171,7 @@ export const VARIANTS: readonly Variant[] = [
   },
 ]
 
-export const DEFAULT_VARIANT = 'eclipse'
+export const DEFAULT_VARIANT = 'deep-field'
 
 /** Lower case, each run of anything else a hyphen, so "Deep Field" and "deep-field" both find it. */
 export function keyOf(text: string): string {
