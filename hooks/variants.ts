@@ -275,7 +275,7 @@ export const VARIANTS: readonly Variant[] = [
   },
 ]
 
-export const DEFAULT_VARIANT = 'deep-field'
+export const DEFAULT_VARIANT = 'starfield'
 
 /** Lower case, each run of anything else a hyphen, so "Deep Field" and "deep-field" both find it. */
 export function keyOf(text: string): string {

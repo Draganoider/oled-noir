@@ -139,7 +139,7 @@ test('a stored glass level is used, and an unknown one falls back to bare', asyn
   ])
 })
 
-test('the session starts on Deep Field with bare glass when nothing was chosen', async ($, on) => {
+test('the session starts on Starfield with bare glass when nothing was chosen', async ($, on) => {
   const sets: ThemeSetArgs[] = []
 
   on('command.register', () => ({ value: { command: 'noir' } }))
@@ -154,7 +154,7 @@ test('the session starts on Deep Field with bare glass when nothing was chosen',
   await $.session.start({ cwd: '/', surface: 'desktop', isInteractive: true })
 
   expect(sets).toHaveLength(1)
-  expect(sets[0]?.backdrop).toEqual({ scene: 'deep-field', glass: GLASS_LEVELS.bare })
+  expect(sets[0]?.backdrop).toEqual({ scene: 'starfield', glass: GLASS_LEVELS.bare })
   expect(sets[0]?.style?.UserMessage).toBeDefined()
 })
 

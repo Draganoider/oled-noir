@@ -121,7 +121,7 @@ Your choices are kept for every session and every project.
 
 ## Make it yours
 
-A fresh install starts on **Deep Field**, with **bare** glass, **smoky** text, **outline** bubbles and **pill** tool rows. Each part can be changed on its own.
+A fresh install starts on **Starfield**, with **bare** glass, **smoky** text, **outline** bubbles and **pill** tool rows. Each part can be changed on its own.
 
 <details open>
 <summary><b>Panels</b> · <code>/noir glass</code> · the glass the app lays over the scene behind the chat</summary>
