@@ -13,6 +13,8 @@ declare module 'claude-code' {
       applied: AppliedLook
       /** The panel glass the card marks as chosen. */
       glass: PanelGlass
+      /** What sits behind reply text, as the card marks it: `black`, `soft`, `smoky`, `dim`, `halo` or `none`. */
+      text: string | null
     }
   }
 }

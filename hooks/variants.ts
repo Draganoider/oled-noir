@@ -1,4 +1,10 @@
-import type { ThemeBackdropGlass, ThemeSound, ThemeStyle } from 'claude-code'
+import type {
+  ThemeBackdropGlass,
+  ThemeMessageRule,
+  ThemeSound,
+  ThemeStyle,
+  ThemeTypeRule,
+} from 'claude-code'
 
 import {
   deepFieldSvg,
@@ -65,8 +71,41 @@ export function isGlassLevel(text: unknown): text is GlassLevel {
 }
 
 /**
- * The rows every variant shares: words on solid black, so they read over any scene,
- * a thin hairline round your own messages, and tool calls as quiet code rows.
+ * What sits behind the words of a reply, over the scene. A message box can't blur what is behind it, so the
+ * softer kinds use a see-through black fill with a wide black shadow: the edge fades out like smoke instead of
+ * stopping at a hard rectangle. Only `black` names a text color: over a see-through fill the app picks its own
+ * light text, since a color it can't promise contrast for would be dropped.
+ */
+export const TEXT_BACKINGS = {
+  black: { color: '#e9e9e9', backgroundColor: '#000000', radius: 8 },
+  soft: { backgroundColor: '#000000d6', radius: 14, shadow: { blur: 22, color: '#000000cc' } },
+  smoky: { backgroundColor: '#000000a3', radius: 18, shadow: { blur: 28, color: '#000000b3' } },
+  dim: { backgroundColor: '#00000066', radius: 20, shadow: { blur: 32, color: '#0000008c' } },
+  halo: { backgroundColor: '#00000033', radius: 22, shadow: { blur: 32, color: '#000000e6' } },
+  none: {},
+} as const satisfies Record<string, ThemeMessageRule>
+
+export type TextBacking = keyof typeof TEXT_BACKINGS
+
+/** One line on each kind of text backing, for the list. */
+export const TEXT_NOTES: Record<TextBacking, string> = {
+  black: 'a solid black box: hides the scene behind the words completely',
+  soft: 'nearly black with soft, smoky edges instead of a hard box',
+  smoky: 'a dark see-through patch that fades out at the edges',
+  dim: 'a light darkening: the scene shows faintly through the words',
+  halo: 'almost no fill, but a dark glow around the text keeps it readable',
+  none: 'nothing at all: the words sit right on the scene',
+}
+
+export const DEFAULT_TEXT: TextBacking = 'soft'
+
+export function isTextBacking(text: unknown): text is TextBacking {
+  return typeof text === 'string' && Object.hasOwn(TEXT_BACKINGS, text)
+}
+
+/**
+ * The rows every variant shares: a black bubble with a hairline round your own messages,
+ * and tool calls as quiet code rows. What sits behind a reply's words is its own setting.
  */
 export const BASE_STYLE: ThemeStyle = {
   Heading: { color: '#ffffff', fontWeight: 'semibold', letterSpacing: 0.3 },
@@ -79,7 +118,7 @@ export const BASE_STYLE: ThemeStyle = {
     paddingX: 14,
     paddingY: 10,
   },
-  AssistantMessage: { color: '#e9e9e9', backgroundColor: '#000000', radius: 8, paddingX: 6 },
+  AssistantMessage: { paddingX: 6 },
   ToolUse: {
     color: '#b8b8b8',
     backgroundColor: '#050505',
@@ -187,13 +226,27 @@ export function variantNamed(text: string): Variant | undefined {
   return VARIANTS.find(variant => variant.id === key || keyOf(variant.title) === key)
 }
 
-/** A variant's own type laid over the base's. */
-export function styleOf(variant: Variant): ThemeStyle {
+/** A type rule without its color, so the app picks a light text that reads on a see-through fill. */
+function withoutColor(rule: ThemeTypeRule | undefined): ThemeTypeRule | undefined {
+  if (rule === undefined) return undefined
+
+  const { color: _color, ...rest } = rule
+
+  return rest
+}
+
+/** A variant's own type laid over the base's, and the chosen backing behind a reply's words. */
+export function styleOf(variant: Variant, backing: TextBacking = DEFAULT_TEXT): ThemeStyle {
   const own = variant.style ?? {}
+  const isOpaque = backing === 'black'
+  const text = own.Text === undefined ? BASE_STYLE.Text : { ...BASE_STYLE.Text, ...own.Text }
+  const heading = { ...BASE_STYLE.Heading, ...own.Heading }
+  const shownText = isOpaque ? text : withoutColor(text)
 
   return {
     ...BASE_STYLE,
-    ...(own.Text !== undefined && { Text: { ...BASE_STYLE.Text, ...own.Text } }),
-    ...(own.Heading !== undefined && { Heading: { ...BASE_STYLE.Heading, ...own.Heading } }),
+    ...(shownText !== undefined && { Text: shownText }),
+    Heading: isOpaque ? heading : (withoutColor(heading) ?? {}),
+    AssistantMessage: { ...BASE_STYLE.AssistantMessage, ...TEXT_BACKINGS[backing] },
   }
 }

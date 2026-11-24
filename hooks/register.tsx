@@ -4,29 +4,36 @@ import type { EngineInterface, Register, ThemeBackdropGlass, ThemeResult, ThemeS
 import { makeColors } from './make-colors.js'
 import {
   DEFAULT_GLASS,
+  DEFAULT_TEXT,
   DEFAULT_VARIANT,
   GLASS_LEVELS,
   GLASS_NOTES,
+  TEXT_BACKINGS,
+  TEXT_NOTES,
   VARIANTS,
   glassWord,
   isGlassLevel,
+  isTextBacking,
   keyOf,
   styleOf,
   variantNamed,
 } from './variants'
-import type { GlassLevel, Variant } from './variants'
+import type { GlassLevel, TextBacking, Variant } from './variants'
 
 const PLUGIN = 'oled-noir'
 const COMMAND = 'noir'
 // One choice for every session and project: the look is yours, not the project's.
 const CHOICE_KEY = 'variant'
 const GLASS_KEY = 'glass'
+const TEXT_KEY = 'text'
 const OFF = 'off'
 const GLASS_ORDER = Object.keys(GLASS_LEVELS) as GlassLevel[]
+const TEXT_ORDER = Object.keys(TEXT_BACKINGS) as TextBacking[]
 
 const isCardOpen = atom({ plugin: 'oled-noir', key: 'isCardOpen' } as const, false)
 const applied = atom({ plugin: 'oled-noir', key: 'applied' } as const, null)
 const panelGlass = atom({ plugin: 'oled-noir', key: 'glass' } as const, null)
+const textBacking = atom({ plugin: 'oled-noir', key: 'text' } as const, null)
 
 // True black for an OLED panel: every surface sits a hair above #000, text is soft white (not pure,
 // which blooms on OLED), and the roles keep just enough hue that red still means trouble.
@@ -85,6 +92,7 @@ export function lookOf(
   withSound: boolean,
   withStyle: boolean,
   glass: GlassLevel = DEFAULT_GLASS,
+  text: TextBacking = DEFAULT_TEXT,
 ): ThemeSetArgs {
   return {
     colors: COLORS,
@@ -93,7 +101,7 @@ export function lookOf(
       variant.scene === undefined
         ? { color: '#000000' }
         : { scene: variant.id, glass: glassOf(glass) },
-    ...(withStyle && { style: styleOf(variant) }),
+    ...(withStyle && { style: styleOf(variant, text) }),
     ...(withSound && variant.sound !== undefined && { sound: variant.sound }),
   }
 }
@@ -104,24 +112,25 @@ export function lookOf(
  */
 async function setLook($: EngineInterface, variant: Variant): Promise<ThemeResult> {
   const glass = await storedGlass($)
+  const text = await storedText($)
   let failure: unknown
 
   if (variant.sound !== undefined) {
     try {
-      return await $.theme.set(lookOf(variant, true, true, glass))
+      return await $.theme.set(lookOf(variant, true, true, glass, text))
     } catch (error) {
       failure = error
     }
   }
 
   try {
-    return await $.theme.set(lookOf(variant, false, true, glass))
+    return await $.theme.set(lookOf(variant, false, true, glass, text))
   } catch (error) {
     failure ??= error
   }
 
   try {
-    return await $.theme.set(lookOf(variant, false, false, glass))
+    return await $.theme.set(lookOf(variant, false, false, glass, text))
   } catch (error) {
     throw failure ?? error
   }
@@ -158,6 +167,44 @@ async function setGlass($: EngineInterface, level: GlassLevel): Promise<string> 
 
   if (variant.scene === undefined) {
     return `${said} ${variant.title} has no scene to see through, so it shows with the other looks.`
+  }
+
+  try {
+    await setLook($, variant)
+  } catch (error) {
+    return `${said} The look could not be set again: ${reasonOf(error)}`
+  }
+
+  return said
+}
+
+/** What sits behind a reply's words: the stored kind, else the default. A store that fails counts as none. */
+async function storedText($: EngineInterface): Promise<TextBacking> {
+  try {
+    const stored = await $.store.get(TEXT_KEY)
+
+    return isTextBacking(stored) ? stored : DEFAULT_TEXT
+  } catch {
+    return DEFAULT_TEXT
+  }
+}
+
+/** Keeps a text backing and puts the look showing on again with it. */
+async function setText($: EngineInterface, backing: TextBacking): Promise<string> {
+  try {
+    await $.store.set(TEXT_KEY, backing)
+  } catch (error) {
+    return `The text backing could not be saved: ${reasonOf(error)}`
+  }
+
+  await update($, textBacking, () => backing)
+
+  const now = await read($, applied)
+  const variant = now === null ? undefined : variantNamed(now)
+  const said = `Reply text now has ${backing}: ${TEXT_NOTES[backing]}.`
+
+  if (variant === undefined) {
+    return `${said} It shows once a look is on.`
   }
 
   try {
@@ -231,6 +278,15 @@ export function listText(): string {
     ...VARIANTS.map(variant => `  ${variant.id}: ${variant.blurb}`),
     `/${COMMAND} <name> puts one on, /${COMMAND} next steps to the next, /${COMMAND} off turns it off.`,
     `/${COMMAND} glass lists the kinds of panel glass, /${COMMAND} glass <kind> picks one, /${COMMAND} glass next steps through them.`,
+    `/${COMMAND} text lists what can sit behind reply text, /${COMMAND} text <kind> picks one, /${COMMAND} text next steps through them.`,
+  ].join('\n')
+}
+
+function textList(now: TextBacking): string {
+  return [
+    `Behind reply text, from a solid box to nothing (now ${now}):`,
+    ...TEXT_ORDER.map(backing => `  ${backing === now ? '✓' : ' '} ${backing}: ${TEXT_NOTES[backing]}`),
+    `/${COMMAND} text <kind> picks one, /${COMMAND} text next steps to the next.`,
   ].join('\n')
 }
 
@@ -268,6 +324,19 @@ async function runCommand($: EngineInterface, args: string): Promise<string> {
     if (isGlassLevel(level)) return setGlass($, level)
 
     return level === '' ? glassList(now) : `No glass named "${level}". ${glassList(now)}`
+  }
+
+  if (key === 'text' || key.startsWith('text-')) {
+    const backing = key.slice('text-'.length)
+    const now = await storedText($)
+
+    if (backing === 'next') {
+      return setText($, TEXT_ORDER[(TEXT_ORDER.indexOf(now) + 1) % TEXT_ORDER.length] ?? DEFAULT_TEXT)
+    }
+
+    if (isTextBacking(backing)) return setText($, backing)
+
+    return backing === '' ? textList(now) : `No text backing named "${backing}". ${textList(now)}`
   }
 
   const variant = variantNamed(name)
@@ -338,6 +407,8 @@ export const register: Register = on => {
     const now = await read($, applied)
     const keptGlass = await read($, panelGlass)
     const glass = isGlassLevel(keptGlass) ? keptGlass : await storedGlass($)
+    const keptText = await read($, textBacking)
+    const text = isTextBacking(keptText) ? keptText : await storedText($)
 
     return (
       <Box flexDirection="column" borderStyle="round" paddingX={1} gap="md">
@@ -374,6 +445,29 @@ export const register: Register = on => {
                 }}
               >
                 {word}
+              </Button>
+            )
+          })}
+        </Box>
+        <Box flexDirection="row" flexWrap="wrap" gap={1}>
+          <Text dimColor>Text</Text>
+          {TEXT_ORDER.map(backing => {
+            const word = backing.charAt(0).toUpperCase() + backing.slice(1)
+            const shown = text === backing ? `✓ ${word}` : word
+
+            return (
+              <Button
+                key={`text-${backing}`}
+                label={shown}
+                onPress={async () => {
+                  const said = await setText($, backing)
+
+                  if (!said.startsWith('Reply text now has') || said.includes('could not')) {
+                    void $.ui.toast(said)
+                  }
+                }}
+              >
+                {shown}
               </Button>
             )
           })}

@@ -2,7 +2,7 @@ import { expect, test } from 'claude-code/testing'
 import type { ThemeSetArgs } from 'claude-code'
 
 import { listText, lookOf, sceneSource } from './register'
-import { GLASS_LEVELS, VARIANTS } from './variants'
+import { GLASS_LEVELS, TEXT_BACKINGS, VARIANTS } from './variants'
 
 test('every scene is a whole, pure-vector SVG the engine takes', () => {
   for (const variant of VARIANTS) {
@@ -51,6 +51,33 @@ test('the original frosted glass is kept, and the kinds run from none to solid',
   expect(Object.keys(GLASS_LEVELS)[0]).toBe('none')
   expect(GLASS_LEVELS.none).toBe(false)
   expect(Object.keys(GLASS_LEVELS).at(-1)).toBe('solid')
+})
+
+test('reply text sits on soft smoke by default, and only the solid box names a text color', () => {
+  const eclipse = VARIANTS.find(variant => variant.id === 'eclipse')!
+  const soft = lookOf(eclipse, false, true).style
+
+  expect(soft?.AssistantMessage).toEqual({ paddingX: 6, ...TEXT_BACKINGS.soft })
+  expect(soft?.Heading?.color).toBeUndefined()
+  expect(soft?.Heading?.fontFamily).toEqual(['serif'])
+
+  const black = lookOf(eclipse, false, true, 'bare', 'black').style
+
+  expect(black?.AssistantMessage).toEqual({ paddingX: 6, color: '#e9e9e9', backgroundColor: '#000000', radius: 8 })
+  expect(black?.Heading?.color).toBe('#ffffff')
+
+  const none = lookOf(eclipse, false, true, 'bare', 'none').style
+
+  expect(none?.AssistantMessage).toEqual({ paddingX: 6 })
+})
+
+test('every see-through backing fades out with a shadow inside the allowed range', () => {
+  for (const [name, rule] of Object.entries(TEXT_BACKINGS)) {
+    if (name === 'black' || name === 'none') continue
+
+    expect('shadow' in rule && rule.shadow.blur).toBeLessThanOrEqual(32)
+    expect('backgroundColor' in rule && rule.backgroundColor).toMatch(/^#000000[0-9a-f]{2}$/)
+  }
 })
 
 test('no glass reaches the theme as false', () => {
