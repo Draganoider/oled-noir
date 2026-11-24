@@ -1,0 +1,20 @@
+name: Idea for a look or setting
+description: Suggest a new scene, a setting, or a change to an existing look
+labels: [idea]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: The idea
+      description: What would it show or change? Black and white, slow, and mostly dark fits OLED Noir best.
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why you'd like it
+  - type: textarea
+    id: reference
+    attributes:
+      label: Sketches or references
+      description: Optional. Drawings, screenshots or links that show the mood.

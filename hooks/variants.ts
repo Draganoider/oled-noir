@@ -98,7 +98,7 @@ export const TEXT_NOTES: Record<TextBacking, string> = {
   none: 'nothing at all: the words sit right on the scene',
 }
 
-export const DEFAULT_TEXT: TextBacking = 'soft'
+export const DEFAULT_TEXT: TextBacking = 'smoky'
 
 export function isTextBacking(text: unknown): text is TextBacking {
   return typeof text === 'string' && Object.hasOwn(TEXT_BACKINGS, text)
@@ -129,7 +129,7 @@ export const BUBBLE_NOTES: Record<UserBubble, string> = {
   none: 'no bubble: your words sit right on the scene',
 }
 
-export const DEFAULT_BUBBLE: UserBubble = 'outline'
+export const DEFAULT_BUBBLE: UserBubble = 'soft'
 
 export function isUserBubble(text: unknown): text is UserBubble {
   return typeof text === 'string' && Object.hasOwn(USER_BUBBLES, text)
@@ -169,7 +169,7 @@ export const TOOL_NOTES: Record<ToolRow, string> = {
   none: "the app's own tool rows",
 }
 
-export const DEFAULT_TOOL: ToolRow = 'card'
+export const DEFAULT_TOOL: ToolRow = 'pill'
 
 export function isToolRow(text: unknown): text is ToolRow {
   return typeof text === 'string' && Object.hasOwn(TOOL_ROWS, text)

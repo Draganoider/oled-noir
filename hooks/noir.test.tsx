@@ -53,11 +53,11 @@ test('the original frosted glass is kept, and the kinds run from none to solid',
   expect(Object.keys(GLASS_LEVELS).at(-1)).toBe('solid')
 })
 
-test('reply text sits on soft smoke by default, and only the solid box names a text color', () => {
+test('reply text sits on smoky glass by default, and only the solid box names a text color', () => {
   const eclipse = VARIANTS.find(variant => variant.id === 'eclipse')!
   const soft = lookOf(eclipse, false, true).style
 
-  expect(soft?.AssistantMessage).toEqual({ paddingX: 6, ...TEXT_BACKINGS.soft })
+  expect(soft?.AssistantMessage).toEqual({ paddingX: 6, ...TEXT_BACKINGS.smoky })
   expect(soft?.Heading?.color).toBeUndefined()
   expect(soft?.Heading?.fontFamily).toEqual(['serif'])
 
@@ -80,17 +80,13 @@ test('every see-through backing fades out with a shadow inside the allowed range
   }
 })
 
-test('your messages keep the outline bubble by default, and each kind reaches the theme', () => {
+test('your messages use the soft bubble by default, and each kind reaches the theme', () => {
   const eclipse = VARIANTS.find(variant => variant.id === 'eclipse')!
 
   expect(lookOf(eclipse, false, true).style?.UserMessage).toEqual({
     paddingX: 14,
     paddingY: 10,
-    color: '#f2f2f2',
-    backgroundColor: '#000000',
-    borderColor: '#3a3a3a',
-    borderWidth: 1,
-    radius: 14,
+    ...USER_BUBBLES.soft,
   })
 
   for (const [name, rule] of Object.entries(USER_BUBBLES)) {
@@ -100,17 +96,11 @@ test('your messages keep the outline bubble by default, and each kind reaches th
   }
 })
 
-test('tool rows keep the original card by default, and each kind reaches the theme', () => {
+test('tool rows use the pill by default, and each kind reaches the theme', () => {
   const eclipse = VARIANTS.find(variant => variant.id === 'eclipse')!
 
-  expect(lookOf(eclipse, false, true).style?.ToolUse).toEqual({
-    paddingX: 8,
-    color: '#b8b8b8',
-    backgroundColor: '#050505',
-    borderColor: '#1e1e1e',
-    radius: 8,
-    fontFamily: ['code'],
-  })
+  // The pill sets its own wider padding over the base's.
+  expect(lookOf(eclipse, false, true).style?.ToolUse).toEqual(TOOL_ROWS.pill)
 
   for (const [name, rule] of Object.entries(TOOL_ROWS)) {
     const look = lookOf(eclipse, false, true, 'bare', 'soft', 'outline', name as keyof typeof TOOL_ROWS)

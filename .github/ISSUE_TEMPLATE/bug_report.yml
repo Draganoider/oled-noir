@@ -1,0 +1,45 @@
+name: Bug report
+description: Something in OLED Noir doesn't look or work right
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you saw, and what you expected instead. A screenshot helps a lot.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: How to see it
+      description: The commands you ran or the buttons you pressed.
+      placeholder: |
+        1. /noir murmuration
+        2. /noir glass clear
+        3. ...
+  - type: textarea
+    id: settings
+    attributes:
+      label: Your look and settings
+      description: Paste what `/noir list` and `/noir glass` show.
+  - type: input
+    id: app
+    attributes:
+      label: Claude desktop app version
+      placeholder: e.g. 6.28899.6
+  - type: input
+    id: cli
+    attributes:
+      label: Claude Code version
+      description: Run `claude --version`.
+      placeholder: e.g. 2.1.330
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - Windows
+        - macOS
+        - Linux
+        - iOS or Android
