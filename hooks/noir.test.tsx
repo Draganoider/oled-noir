@@ -2,7 +2,7 @@ import { expect, test } from 'claude-code/testing'
 import type { ThemeSetArgs } from 'claude-code'
 
 import { listText, lookOf, sceneSource } from './register'
-import { GLASS_LEVELS, TEXT_BACKINGS, VARIANTS } from './variants'
+import { GLASS_LEVELS, TEXT_BACKINGS, USER_BUBBLES, VARIANTS } from './variants'
 
 test('every scene is a whole, pure-vector SVG the engine takes', () => {
   for (const variant of VARIANTS) {
@@ -77,6 +77,26 @@ test('every see-through backing fades out with a shadow inside the allowed range
 
     expect('shadow' in rule && rule.shadow.blur).toBeLessThanOrEqual(32)
     expect('backgroundColor' in rule && rule.backgroundColor).toMatch(/^#000000[0-9a-f]{2}$/)
+  }
+})
+
+test('your messages keep the outline bubble by default, and each kind reaches the theme', () => {
+  const eclipse = VARIANTS.find(variant => variant.id === 'eclipse')!
+
+  expect(lookOf(eclipse, false, true).style?.UserMessage).toEqual({
+    paddingX: 14,
+    paddingY: 10,
+    color: '#f2f2f2',
+    backgroundColor: '#000000',
+    borderColor: '#3a3a3a',
+    borderWidth: 1,
+    radius: 14,
+  })
+
+  for (const [name, rule] of Object.entries(USER_BUBBLES)) {
+    const look = lookOf(eclipse, false, true, 'bare', 'soft', name as keyof typeof USER_BUBBLES)
+
+    expect(look.style?.UserMessage).toEqual({ paddingX: 14, paddingY: 10, ...rule })
   }
 })
 

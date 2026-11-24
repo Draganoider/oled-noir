@@ -104,20 +104,43 @@ export function isTextBacking(text: unknown): text is TextBacking {
 }
 
 /**
+ * How your own messages look. The opaque kinds name their text color; over a see-through fill the app
+ * picks its own, as for reply text.
+ */
+export const USER_BUBBLES = {
+  outline: { color: '#f2f2f2', backgroundColor: '#000000', borderColor: '#3a3a3a', borderWidth: 1, radius: 14 },
+  ring: { color: '#ffffff', backgroundColor: '#000000', borderColor: '#d9d9d9', borderWidth: 1.5, radius: 22 },
+  soft: { backgroundColor: '#000000d6', radius: 16, shadow: { blur: 22, color: '#000000cc' } },
+  glass: { backgroundColor: '#ffffff14', borderColor: '#ffffff33', borderWidth: 1, radius: 16 },
+  inverted: { color: '#0a0a0a', backgroundColor: '#f2f2f2', radius: 16 },
+  none: {},
+} as const satisfies Record<string, ThemeMessageRule>
+
+export type UserBubble = keyof typeof USER_BUBBLES
+
+/** One line on each kind of bubble, for the list. */
+export const BUBBLE_NOTES: Record<UserBubble, string> = {
+  outline: 'a black bubble with a thin gray outline (the original look)',
+  ring: 'a black pill with a bright white outline',
+  soft: 'nearly black with smoky, fading edges, like the soft reply text',
+  glass: 'a faint white tint with a light edge, like frosted glass',
+  inverted: 'a white bubble with black words, so your messages stand out',
+  none: 'no bubble: your words sit right on the scene',
+}
+
+export const DEFAULT_BUBBLE: UserBubble = 'outline'
+
+export function isUserBubble(text: unknown): text is UserBubble {
+  return typeof text === 'string' && Object.hasOwn(USER_BUBBLES, text)
+}
+
+/**
  * The rows every variant shares: a black bubble with a hairline round your own messages,
  * and tool calls as quiet code rows. What sits behind a reply's words is its own setting.
  */
 export const BASE_STYLE: ThemeStyle = {
   Heading: { color: '#ffffff', fontWeight: 'semibold', letterSpacing: 0.3 },
-  UserMessage: {
-    color: '#f2f2f2',
-    backgroundColor: '#000000',
-    borderColor: '#3a3a3a',
-    borderWidth: 1,
-    radius: 14,
-    paddingX: 14,
-    paddingY: 10,
-  },
+  UserMessage: { paddingX: 14, paddingY: 10 },
   AssistantMessage: { paddingX: 6 },
   ToolUse: {
     color: '#b8b8b8',
@@ -235,8 +258,12 @@ function withoutColor(rule: ThemeTypeRule | undefined): ThemeTypeRule | undefine
   return rest
 }
 
-/** A variant's own type laid over the base's, and the chosen backing behind a reply's words. */
-export function styleOf(variant: Variant, backing: TextBacking = DEFAULT_TEXT): ThemeStyle {
+/** A variant's own type laid over the base's, the backing behind a reply's words, and your bubble. */
+export function styleOf(
+  variant: Variant,
+  backing: TextBacking = DEFAULT_TEXT,
+  bubble: UserBubble = DEFAULT_BUBBLE,
+): ThemeStyle {
   const own = variant.style ?? {}
   const isOpaque = backing === 'black'
   const text = own.Text === undefined ? BASE_STYLE.Text : { ...BASE_STYLE.Text, ...own.Text }
@@ -248,5 +275,6 @@ export function styleOf(variant: Variant, backing: TextBacking = DEFAULT_TEXT): 
     ...(shownText !== undefined && { Text: shownText }),
     Heading: isOpaque ? heading : (withoutColor(heading) ?? {}),
     AssistantMessage: { ...BASE_STYLE.AssistantMessage, ...TEXT_BACKINGS[backing] },
+    UserMessage: { ...BASE_STYLE.UserMessage, ...USER_BUBBLES[bubble] },
   }
 }

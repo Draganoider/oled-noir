@@ -15,6 +15,8 @@ declare module 'claude-code' {
       glass: PanelGlass
       /** What sits behind reply text, as the card marks it: `black`, `soft`, `smoky`, `dim`, `halo` or `none`. */
       text: string | null
+      /** How your own messages look, as the card marks it: `outline`, `ring`, `soft`, `glass`, `inverted` or `none`. */
+      bubble: string | null
     }
   }
 }

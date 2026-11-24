@@ -46,6 +46,8 @@ The app lays glass over the scene behind the chat. `/noir glass` lists the kinds
 
 Behind the words of each reply sits a backing, so text stays readable over the scene. `/noir text` lists the kinds: `black` (a solid box), `soft` (the default: nearly black with smoky edges), `smoky`, `dim`, `halo` (a dark glow around the words) and `none`. `/noir text <kind>` picks one, `/noir text next` steps through them, and the Text row on the `/noir` card does the same. Message boxes can't blur what is behind them, so the softer kinds fade out with a wide dark shadow instead. Code blocks keep the app's own box.
 
+Your own messages have a bubble of their own. `/noir bubble` lists the kinds: `outline` (the default: black with a thin gray edge), `ring` (a black pill with a white edge), `soft`, `glass` (a faint white tint), `inverted` (a white bubble with black words) and `none`. `/noir bubble <kind>` picks one, `/noir bubble next` steps through them, and the You row on the `/noir` card does the same.
+
 Sound plays only after you press the speaker in the session's title bar. With reduced motion turned on in your system, every scene rests as a still picture.
 
 ## License

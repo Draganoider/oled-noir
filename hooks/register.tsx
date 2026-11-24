@@ -3,6 +3,8 @@ import type { EngineInterface, Register, ThemeBackdropGlass, ThemeResult, ThemeS
 
 import { makeColors } from './make-colors.js'
 import {
+  BUBBLE_NOTES,
+  DEFAULT_BUBBLE,
   DEFAULT_GLASS,
   DEFAULT_TEXT,
   DEFAULT_VARIANT,
@@ -10,15 +12,17 @@ import {
   GLASS_NOTES,
   TEXT_BACKINGS,
   TEXT_NOTES,
+  USER_BUBBLES,
   VARIANTS,
   glassWord,
   isGlassLevel,
   isTextBacking,
+  isUserBubble,
   keyOf,
   styleOf,
   variantNamed,
 } from './variants'
-import type { GlassLevel, TextBacking, Variant } from './variants'
+import type { GlassLevel, TextBacking, UserBubble, Variant } from './variants'
 
 const PLUGIN = 'oled-noir'
 const COMMAND = 'noir'
@@ -26,14 +30,17 @@ const COMMAND = 'noir'
 const CHOICE_KEY = 'variant'
 const GLASS_KEY = 'glass'
 const TEXT_KEY = 'text'
+const BUBBLE_KEY = 'bubble'
 const OFF = 'off'
 const GLASS_ORDER = Object.keys(GLASS_LEVELS) as GlassLevel[]
 const TEXT_ORDER = Object.keys(TEXT_BACKINGS) as TextBacking[]
+const BUBBLE_ORDER = Object.keys(USER_BUBBLES) as UserBubble[]
 
 const isCardOpen = atom({ plugin: 'oled-noir', key: 'isCardOpen' } as const, false)
 const applied = atom({ plugin: 'oled-noir', key: 'applied' } as const, null)
 const panelGlass = atom({ plugin: 'oled-noir', key: 'glass' } as const, null)
 const textBacking = atom({ plugin: 'oled-noir', key: 'text' } as const, null)
+const userBubble = atom({ plugin: 'oled-noir', key: 'bubble' } as const, null)
 
 // True black for an OLED panel: every surface sits a hair above #000, text is soft white (not pure,
 // which blooms on OLED), and the roles keep just enough hue that red still means trouble.
@@ -93,6 +100,7 @@ export function lookOf(
   withStyle: boolean,
   glass: GlassLevel = DEFAULT_GLASS,
   text: TextBacking = DEFAULT_TEXT,
+  bubble: UserBubble = DEFAULT_BUBBLE,
 ): ThemeSetArgs {
   return {
     colors: COLORS,
@@ -101,7 +109,7 @@ export function lookOf(
       variant.scene === undefined
         ? { color: '#000000' }
         : { scene: variant.id, glass: glassOf(glass) },
-    ...(withStyle && { style: styleOf(variant, text) }),
+    ...(withStyle && { style: styleOf(variant, text, bubble) }),
     ...(withSound && variant.sound !== undefined && { sound: variant.sound }),
   }
 }
@@ -113,24 +121,25 @@ export function lookOf(
 async function setLook($: EngineInterface, variant: Variant): Promise<ThemeResult> {
   const glass = await storedGlass($)
   const text = await storedText($)
+  const bubble = await storedBubble($)
   let failure: unknown
 
   if (variant.sound !== undefined) {
     try {
-      return await $.theme.set(lookOf(variant, true, true, glass, text))
+      return await $.theme.set(lookOf(variant, true, true, glass, text, bubble))
     } catch (error) {
       failure = error
     }
   }
 
   try {
-    return await $.theme.set(lookOf(variant, false, true, glass, text))
+    return await $.theme.set(lookOf(variant, false, true, glass, text, bubble))
   } catch (error) {
     failure ??= error
   }
 
   try {
-    return await $.theme.set(lookOf(variant, false, false, glass, text))
+    return await $.theme.set(lookOf(variant, false, false, glass, text, bubble))
   } catch (error) {
     throw failure ?? error
   }
@@ -216,6 +225,44 @@ async function setText($: EngineInterface, backing: TextBacking): Promise<string
   return said
 }
 
+/** How your own messages look: the stored kind, else the default. A store that fails counts as none. */
+async function storedBubble($: EngineInterface): Promise<UserBubble> {
+  try {
+    const stored = await $.store.get(BUBBLE_KEY)
+
+    return isUserBubble(stored) ? stored : DEFAULT_BUBBLE
+  } catch {
+    return DEFAULT_BUBBLE
+  }
+}
+
+/** Keeps a bubble kind and puts the look showing on again with it. */
+async function setBubble($: EngineInterface, bubble: UserBubble): Promise<string> {
+  try {
+    await $.store.set(BUBBLE_KEY, bubble)
+  } catch (error) {
+    return `The bubble could not be saved: ${reasonOf(error)}`
+  }
+
+  await update($, userBubble, () => bubble)
+
+  const now = await read($, applied)
+  const variant = now === null ? undefined : variantNamed(now)
+  const said = `Your messages now use ${bubble}: ${BUBBLE_NOTES[bubble]}.`
+
+  if (variant === undefined) {
+    return `${said} It shows once a look is on.`
+  }
+
+  try {
+    await setLook($, variant)
+  } catch (error) {
+    return `${said} The look could not be set again: ${reasonOf(error)}`
+  }
+
+  return said
+}
+
 /** The variant the store holds, the default where it holds none, or OFF. */
 async function storedChoice($: EngineInterface): Promise<Variant | typeof OFF> {
   const stored = await $.store.get(CHOICE_KEY)
@@ -279,6 +326,15 @@ export function listText(): string {
     `/${COMMAND} <name> puts one on, /${COMMAND} next steps to the next, /${COMMAND} off turns it off.`,
     `/${COMMAND} glass lists the kinds of panel glass, /${COMMAND} glass <kind> picks one, /${COMMAND} glass next steps through them.`,
     `/${COMMAND} text lists what can sit behind reply text, /${COMMAND} text <kind> picks one, /${COMMAND} text next steps through them.`,
+    `/${COMMAND} bubble lists the looks for your own messages, /${COMMAND} bubble <kind> picks one, /${COMMAND} bubble next steps through them.`,
+  ].join('\n')
+}
+
+function bubbleList(now: UserBubble): string {
+  return [
+    `Your own messages (now ${now}):`,
+    ...BUBBLE_ORDER.map(bubble => `  ${bubble === now ? '✓' : ' '} ${bubble}: ${BUBBLE_NOTES[bubble]}`),
+    `/${COMMAND} bubble <kind> picks one, /${COMMAND} bubble next steps to the next.`,
   ].join('\n')
 }
 
@@ -337,6 +393,19 @@ async function runCommand($: EngineInterface, args: string): Promise<string> {
     if (isTextBacking(backing)) return setText($, backing)
 
     return backing === '' ? textList(now) : `No text backing named "${backing}". ${textList(now)}`
+  }
+
+  if (key === 'bubble' || key.startsWith('bubble-')) {
+    const bubble = key.slice('bubble-'.length)
+    const now = await storedBubble($)
+
+    if (bubble === 'next') {
+      return setBubble($, BUBBLE_ORDER[(BUBBLE_ORDER.indexOf(now) + 1) % BUBBLE_ORDER.length] ?? DEFAULT_BUBBLE)
+    }
+
+    if (isUserBubble(bubble)) return setBubble($, bubble)
+
+    return bubble === '' ? bubbleList(now) : `No bubble named "${bubble}". ${bubbleList(now)}`
   }
 
   const variant = variantNamed(name)
@@ -409,6 +478,8 @@ export const register: Register = on => {
     const glass = isGlassLevel(keptGlass) ? keptGlass : await storedGlass($)
     const keptText = await read($, textBacking)
     const text = isTextBacking(keptText) ? keptText : await storedText($)
+    const keptBubble = await read($, userBubble)
+    const bubble = isUserBubble(keptBubble) ? keptBubble : await storedBubble($)
 
     return (
       <Box flexDirection="column" borderStyle="round" paddingX={1} gap="md">
@@ -463,6 +534,29 @@ export const register: Register = on => {
                   const said = await setText($, backing)
 
                   if (!said.startsWith('Reply text now has') || said.includes('could not')) {
+                    void $.ui.toast(said)
+                  }
+                }}
+              >
+                {shown}
+              </Button>
+            )
+          })}
+        </Box>
+        <Box flexDirection="row" flexWrap="wrap" gap={1}>
+          <Text dimColor>You</Text>
+          {BUBBLE_ORDER.map(kind => {
+            const word = kind.charAt(0).toUpperCase() + kind.slice(1)
+            const shown = bubble === kind ? `✓ ${word}` : word
+
+            return (
+              <Button
+                key={`bubble-${kind}`}
+                label={shown}
+                onPress={async () => {
+                  const said = await setBubble($, kind)
+
+                  if (!said.startsWith('Your messages now use') || said.includes('could not')) {
                     void $.ui.toast(said)
                   }
                 }}
