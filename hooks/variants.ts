@@ -15,16 +15,29 @@ export type Variant = {
   title: string
   blurb: string
   scene?: () => string
-  glass?: ThemeBackdropGlass
   sound?: ThemeSound
   style?: Pick<ThemeStyle, 'Text' | 'Heading'>
 }
 
 /**
- * The app's own panels (the sidebar and the session panel on the right) are see-through black glass:
- * the scene shows through them, softened, and their words stay readable because the scenes are mostly black.
+ * How see-through the app's own panels are (the sidebar and the session panel on the right): black glass
+ * over the scene. Blur smears the scene's thin white lines into a haze that looks like solid black, so the
+ * clearer levels blur little.
  */
-const GLASS: ThemeBackdropGlass = { blur: 18, tint: '#000000', opacity: 0.38 }
+export const GLASS_LEVELS = {
+  clear: { blur: 2, tint: '#000000', opacity: 0.18 },
+  light: { blur: 6, tint: '#000000', opacity: 0.35 },
+  frosted: { blur: 18, tint: '#000000', opacity: 0.45 },
+  solid: { blur: 0, tint: '#000000', opacity: 0.92 },
+} as const satisfies Record<string, ThemeBackdropGlass>
+
+export type GlassLevel = keyof typeof GLASS_LEVELS
+
+export const DEFAULT_GLASS: GlassLevel = 'clear'
+
+export function isGlassLevel(text: unknown): text is GlassLevel {
+  return typeof text === 'string' && Object.hasOwn(GLASS_LEVELS, text)
+}
 
 /**
  * The rows every variant shares: words on solid black, so they read over any scene,
@@ -88,7 +101,6 @@ export const VARIANTS: readonly Variant[] = [
     title: 'Eclipse',
     blurb: 'A black sun in a slowly turning white corona, top right. A diamond-ring glint now and then.',
     scene: eclipseSvg,
-    glass: GLASS,
     style: { Heading: { color: '#ffffff', fontFamily: ['serif'], fontWeight: 'regular', letterSpacing: 1 } },
   },
   {
@@ -96,7 +108,6 @@ export const VARIANTS: readonly Variant[] = [
     title: 'Deep Field',
     blurb: 'Stars drifting at two depths, a turning spiral galaxy, shooting stars. Has sound.',
     scene: deepFieldSvg,
-    glass: GLASS,
     sound: SPACE_SOUND,
   },
   {
@@ -104,7 +115,6 @@ export const VARIANTS: readonly Variant[] = [
     title: 'Oscilloscope',
     blurb: 'A phosphor X-Y scope tracing a turning Lissajous knot, a live waveform top right. Mono type.',
     scene: oscilloscopeSvg,
-    glass: { blur: 8, tint: '#000000', opacity: 0.42 },
     style: {
       Text: { fontFamily: ['mono'], fontSize: 14, lineHeight: 22 },
       Heading: { color: '#ffffff', fontFamily: ['mono'], fontWeight: 'bold', letterSpacing: 1.5 },
@@ -115,7 +125,6 @@ export const VARIANTS: readonly Variant[] = [
     title: 'Night Rain',
     blurb: 'Rain falling in the margins, rings spreading in the puddles at the corners. Has sound.',
     scene: nightRainSvg,
-    glass: GLASS,
     sound: RAIN_SOUND,
   },
   {
@@ -123,14 +132,12 @@ export const VARIANTS: readonly Variant[] = [
     title: 'Topography',
     blurb: 'Contour lines of three hills on a map sheet, a slow ping running out from each summit.',
     scene: topographySvg,
-    glass: GLASS,
   },
   {
     id: 'murmuration',
     title: 'Murmuration',
     blurb: 'A flock of starlings folding and stretching in the top right corner under a crescent moon.',
     scene: murmurationSvg,
-    glass: GLASS,
   },
   {
     id: 'void',

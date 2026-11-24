@@ -42,7 +42,7 @@ Your choice is kept for every session and project.
 - **Murmuration**: a flock of starlings folding and stretching under a crescent moon.
 - **Void**: nothing but the words, every other pixel off.
 
-The sidebar and the session panel on the right are see-through black glass, so the scene shows softly behind them.
+The sidebar and the session panel on the right are see-through black glass, so the scene shows behind them. `/noir glass clear` (the default), `light`, `frosted` or `solid` sets how see-through they are, and so does the Panels row on the `/noir` card.
 
 Sound plays only after you press the speaker in the session's title bar. With reduced motion turned on in your system, every scene rests as a still picture.
 
