@@ -174,13 +174,23 @@ export function eclipseSvg(): string {
 
 /** A deep sky: drifting stars at two depths, a slow spiral galaxy and the odd shooting star. */
 export function deepFieldSvg(): string {
+  return nightSky(true)
+}
+
+/** The same sky with no galaxy: only stars drifting at two depths, and a star falling now and then. */
+export function starfieldSvg(): string {
+  return nightSky(false)
+}
+
+/** The night sky Deep Field and Starfield share. Without the galaxy, a third shooting star crosses the open sky. */
+function nightSky(withGalaxy: boolean): string {
   const rand = rng(23)
   const galaxyX = 1240
   const galaxyY = 700
 
   let arms = ''
 
-  for (let arm = 0; arm < 2; arm += 1) {
+  for (let arm = 0; arm < (withGalaxy ? 2 : 0); arm += 1) {
     for (let i = 0; i < 260; i += 1) {
       const theta = (i / 260) * Math.PI * 4.2
       const r = 8.5 * Math.exp(0.25 * theta)
@@ -211,9 +221,10 @@ export function deepFieldSvg(): string {
     '@keyframes df-dr2{from{transform:translate(-60px,-12px)}to{transform:translate(60px,12px)}}' +
     '.df-spin{animation:df-turn 420s linear infinite}' +
     '@keyframes df-turn{to{transform:rotate(-360deg)}}' +
-    '.df-meteor-a,.df-meteor-b{opacity:0}' +
+    '.df-meteor-a,.df-meteor-b,.df-meteor-c{opacity:0}' +
     '.df-meteor-a{animation:df-fly 17s linear 3s infinite}' +
     '.df-meteor-b{animation:df-fly 29s linear 11s infinite}' +
+    '.df-meteor-c{animation:df-fly 23s linear 7s infinite}' +
     '@keyframes df-fly{0%{opacity:0;transform:translate(0,0)}1.5%{opacity:1}' +
     '5%{opacity:0;transform:translate(-460px,290px)}100%{opacity:0;transform:translate(-460px,290px)}}'
 
@@ -225,8 +236,10 @@ export function deepFieldSvg(): string {
   const body =
     `<g class="df-far">${stars({ count: 230, seed: 29, maxRadius: 1.1, dimmest: 60, area: { x0: -80, x1: 1680, y0: -30, y1: 1030 } })}</g>` +
     `<g class="df-near">${stars({ count: 36, seed: 31, maxRadius: 2.2, dimmest: 160, area: { x0: -100, x1: 1700, y0: -30, y1: 1030 } })}</g>` +
-    `<g transform="translate(${galaxyX} ${galaxyY}) rotate(-24) scale(1 .42)">` +
-    `<g class="df-spin"><circle r="85" fill="url(#df-core)"/>${arms}</g></g>` +
+    (withGalaxy
+      ? `<g transform="translate(${galaxyX} ${galaxyY}) rotate(-24) scale(1 .42)">` +
+        `<g class="df-spin"><circle r="85" fill="url(#df-core)"/>${arms}</g></g>`
+      : meteor(1560, 430, 'df-meteor-c')) +
     meteor(1450, 120, 'df-meteor-a') +
     meteor(820, 70, 'df-meteor-b')
 

@@ -11,7 +11,7 @@
   <img alt="MIT license" src="https://img.shields.io/badge/license-MIT-ffffff?style=flat-square&labelColor=000000">
   <img alt="A Claude Code mod" src="https://img.shields.io/badge/Claude%20Code-mod-ffffff?style=flat-square&labelColor=000000">
   <img alt="Made for OLED" src="https://img.shields.io/badge/made%20for-OLED-ffffff?style=flat-square&labelColor=000000">
-  <img alt="Seven looks" src="https://img.shields.io/badge/looks-7-ffffff?style=flat-square&labelColor=000000">
+  <img alt="Eight looks" src="https://img.shields.io/badge/looks-8-ffffff?style=flat-square&labelColor=000000">
 </p>
 
 <p align="center">
@@ -67,7 +67,12 @@ Every look is a pure black page with one slow scene in white light, kept to the 
     </td>
   </tr>
   <tr>
-    <td colspan="2" align="center">
+    <td width="50%" valign="top">
+      <img src="assets/scenes/starfield.svg" alt="Starfield: drifting stars and a falling star" width="100%"><br>
+      <b>Starfield</b> · <sub>with sound</sub><br>
+      <sub>Only stars, drifting at two depths, and now and then a star falls.</sub>
+    </td>
+    <td width="50%" valign="middle" align="center">
       <b>Void</b><br>
       <sub>No scene at all. Every pixel off but the words: the least power, and no motion.</sub>
     </td>
@@ -194,7 +199,7 @@ On an OLED screen a black pixel is switched off: it draws no power and gives no 
 
 ## Sound
 
-**Deep Field** and **Night Rain** have quiet ambient sound and short cues for a message sent, a turn finished and an error. Sound stays off until you press the speaker in the session's title bar; the menu beside it sets the volume or keeps only the cues. It is made by the app from numbers, not recordings, so the mod ships no audio files.
+**Deep Field**, **Starfield** and **Night Rain** have quiet ambient sound and short cues for a message sent, a turn finished and an error. Sound stays off until you press the speaker in the session's title bar; the menu beside it sets the volume or keeps only the cues. It is made by the app from numbers, not recordings, so the mod ships no audio files.
 
 ## Comfort and accessibility
 

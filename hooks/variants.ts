@@ -13,6 +13,7 @@ import {
   murmurationSvg,
   nightRainSvg,
   oscilloscopeSvg,
+  starfieldSvg,
   topographySvg,
 } from './scenes'
 
@@ -229,6 +230,13 @@ export const VARIANTS: readonly Variant[] = [
     title: 'Deep Field',
     blurb: 'Stars drifting at two depths, a turning spiral galaxy, shooting stars. Has sound.',
     scene: deepFieldSvg,
+    sound: SPACE_SOUND,
+  },
+  {
+    id: 'starfield',
+    title: 'Starfield',
+    blurb: 'Only stars, drifting at two depths, and now and then a star falls. Has sound.',
+    scene: starfieldSvg,
     sound: SPACE_SOUND,
   },
   {
