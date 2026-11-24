@@ -21,10 +21,10 @@ export type Variant = {
 }
 
 /**
- * The app's own panels (the sidebar and the session panel on the right) are see-through black glass:
- * the scene shows through them, softened, and their words stay readable because the scenes are mostly black.
+ * The app's own panels are dark glass over the scene: black, so the scene shows only faintly behind them,
+ * and their words stay easy to read.
  */
-const GLASS: ThemeBackdropGlass = { blur: 18, tint: '#000000', opacity: 0.38 }
+const GLASS: ThemeBackdropGlass = { blur: 14, tint: '#000000', opacity: 0.74 }
 
 /**
  * The rows every variant shares: words on solid black, so they read over any scene,
@@ -104,7 +104,7 @@ export const VARIANTS: readonly Variant[] = [
     title: 'Oscilloscope',
     blurb: 'A phosphor X-Y scope tracing a turning Lissajous knot, a live waveform top right. Mono type.',
     scene: oscilloscopeSvg,
-    glass: { blur: 8, tint: '#000000', opacity: 0.42 },
+    glass: { blur: 6, tint: '#000000', opacity: 0.78 },
     style: {
       Text: { fontFamily: ['mono'], fontSize: 14, lineHeight: 22 },
       Heading: { color: '#ffffff', fontFamily: ['mono'], fontWeight: 'bold', letterSpacing: 1.5 },
