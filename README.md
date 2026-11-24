@@ -42,6 +42,8 @@ Your choice is kept for every session and project.
 - **Murmuration**: a flock of starlings folding and stretching under a crescent moon.
 - **Void**: nothing but the words, every other pixel off.
 
+The app lays glass over the scene behind the chat. `/noir glass` lists the kinds, from most see-through to solid: `none`, `bare`, `clear`, `light`, `mist`, `frosted` (the default), `haze`, `graphite`, `smoke` and `solid`. `/noir glass <kind>` picks one, `/noir glass next` steps through them, and the Panels row on the `/noir` card does the same. The app decides which of its panels the glass covers: today that is the chat column, not the sidebar or the session rail.
+
 Sound plays only after you press the speaker in the session's title bar. With reduced motion turned on in your system, every scene rests as a still picture.
 
 ## License

@@ -2,7 +2,7 @@ import { expect, test } from 'claude-code/testing'
 import type { ThemeSetArgs } from 'claude-code'
 
 import { listText, lookOf, sceneSource } from './register'
-import { VARIANTS } from './variants'
+import { GLASS_LEVELS, VARIANTS } from './variants'
 
 test('every scene is a whole, pure-vector SVG the engine takes', () => {
   for (const variant of VARIANTS) {
@@ -41,9 +41,46 @@ test('the look is true black and dark, with a scene or a black ground', () => {
     expect(look.colors?.inputs.light).toBeUndefined()
     expect(look.colors?.inputs.dark).toBeDefined()
     expect(look.backdrop).toEqual(
-      variant.scene === undefined ? { color: '#000000' } : { scene: variant.id, glass: variant.glass },
+      variant.scene === undefined ? { color: '#000000' } : { scene: variant.id, glass: GLASS_LEVELS.frosted },
     )
   }
+})
+
+test('the panels default to the original frosted glass, and the kinds run from none to solid', () => {
+  expect(GLASS_LEVELS.frosted).toEqual({ blur: 14, tint: '#000000', opacity: 0.74 })
+  expect(Object.keys(GLASS_LEVELS)[0]).toBe('none')
+  expect(GLASS_LEVELS.none).toBe(false)
+  expect(Object.keys(GLASS_LEVELS).at(-1)).toBe('solid')
+})
+
+test('no glass reaches the theme as false', () => {
+  const variant = VARIANTS[0]
+
+  expect(variant).toBeDefined()
+  expect(lookOf(variant ?? VARIANTS[0]!, false, true, 'none').backdrop).toEqual({ scene: 'eclipse', glass: false })
+})
+
+test('a stored glass level is used, and an unknown one falls back to frosted', async ($, on) => {
+  const sets: ThemeSetArgs[] = []
+  let glass: unknown = 'bare'
+
+  on('command.register', () => ({ value: { command: 'noir' } }))
+  on('store.get', (_, e) => ({ value: e.key === 'glass' ? glass : 'deep-field' }))
+  on('theme.set', (_, e) => {
+    sets.push(e)
+
+    return { value: { isDrawn: true, requestId: 'backdrop' } }
+  })
+  on('session.start', (_, e) => ({ cwd: e.cwd }))
+
+  await $.session.start({ cwd: '/', surface: 'desktop', isInteractive: true })
+  glass = 'see-through-ish'
+  await $.session.start({ cwd: '/', surface: 'desktop', isInteractive: true })
+
+  expect(sets.map(set => set.backdrop)).toEqual([
+    { scene: 'deep-field', glass: GLASS_LEVELS.bare },
+    { scene: 'deep-field', glass: GLASS_LEVELS.frosted },
+  ])
 })
 
 test('the session starts on Eclipse when nothing was chosen', async ($, on) => {
@@ -61,7 +98,7 @@ test('the session starts on Eclipse when nothing was chosen', async ($, on) => {
   await $.session.start({ cwd: '/', surface: 'desktop', isInteractive: true })
 
   expect(sets).toHaveLength(1)
-  expect(sets[0]?.backdrop).toEqual({ scene: 'eclipse', glass: VARIANTS[0]?.glass })
+  expect(sets[0]?.backdrop).toEqual({ scene: 'eclipse', glass: GLASS_LEVELS.frosted })
   expect(sets[0]?.style?.UserMessage).toBeDefined()
 })
 

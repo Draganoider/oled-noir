@@ -15,16 +15,54 @@ export type Variant = {
   title: string
   blurb: string
   scene?: () => string
-  glass?: ThemeBackdropGlass
   sound?: ThemeSound
   style?: Pick<ThemeStyle, 'Text' | 'Heading'>
 }
 
 /**
- * The app's own panels are dark glass over the scene: black, so the scene shows only faintly behind them,
- * and their words stay easy to read.
+ * The glass the app lays over the scene behind its own panels, from barely there to solid. Blur smears the
+ * scene's thin white lines into a haze that reads as black, so the clearer kinds blur little. Frosted is the
+ * look the mod started with. The order here is the order /noir lists and the card shows.
  */
-const GLASS: ThemeBackdropGlass = { blur: 14, tint: '#000000', opacity: 0.74 }
+export const GLASS_LEVELS = {
+  none: false,
+  bare: { blur: 0, tint: '#000000', opacity: 0.08 },
+  clear: { blur: 2, tint: '#000000', opacity: 0.2 },
+  light: { blur: 6, tint: '#000000', opacity: 0.35 },
+  mist: { blur: 10, tint: '#000000', opacity: 0.52 },
+  frosted: { blur: 14, tint: '#000000', opacity: 0.74 },
+  haze: { blur: 32, tint: '#000000', opacity: 0.55 },
+  graphite: { blur: 16, tint: '#161616', opacity: 0.8 },
+  smoke: { blur: 22, tint: '#000000', opacity: 0.88 },
+  solid: { blur: 0, tint: '#000000', opacity: 0.97 },
+} as const satisfies Record<string, ThemeBackdropGlass | false>
+
+export type GlassLevel = keyof typeof GLASS_LEVELS
+
+/** One line on each kind of glass, for the list. */
+export const GLASS_NOTES: Record<GlassLevel, string> = {
+  none: 'no glass at all: the app draws its panels its own way, unfrosted',
+  bare: 'almost no glass: the scene shows sharp behind the panels',
+  clear: 'a thin black film, the scene still crisp',
+  light: 'a light tint with a touch of blur',
+  mist: 'half see-through, the scene softened',
+  frosted: 'dark frosted glass, the scene faint (the original look)',
+  haze: 'heavy blur with a medium tint: the scene becomes a soft glow',
+  graphite: 'dark gray glass, so the panels stand apart from the black page',
+  smoke: 'nearly black, only the brightest light shows through',
+  solid: 'black panels, nothing shows through',
+}
+
+export const DEFAULT_GLASS: GlassLevel = 'frosted'
+
+/** A level's name with a capital, for buttons. */
+export function glassWord(level: GlassLevel): string {
+  return level.charAt(0).toUpperCase() + level.slice(1)
+}
+
+export function isGlassLevel(text: unknown): text is GlassLevel {
+  return typeof text === 'string' && Object.hasOwn(GLASS_LEVELS, text)
+}
 
 /**
  * The rows every variant shares: words on solid black, so they read over any scene,
@@ -88,7 +126,6 @@ export const VARIANTS: readonly Variant[] = [
     title: 'Eclipse',
     blurb: 'A black sun in a slowly turning white corona, top right. A diamond-ring glint now and then.',
     scene: eclipseSvg,
-    glass: GLASS,
     style: { Heading: { color: '#ffffff', fontFamily: ['serif'], fontWeight: 'regular', letterSpacing: 1 } },
   },
   {
@@ -96,7 +133,6 @@ export const VARIANTS: readonly Variant[] = [
     title: 'Deep Field',
     blurb: 'Stars drifting at two depths, a turning spiral galaxy, shooting stars. Has sound.',
     scene: deepFieldSvg,
-    glass: GLASS,
     sound: SPACE_SOUND,
   },
   {
@@ -104,7 +140,6 @@ export const VARIANTS: readonly Variant[] = [
     title: 'Oscilloscope',
     blurb: 'A phosphor X-Y scope tracing a turning Lissajous knot, a live waveform top right. Mono type.',
     scene: oscilloscopeSvg,
-    glass: { blur: 6, tint: '#000000', opacity: 0.78 },
     style: {
       Text: { fontFamily: ['mono'], fontSize: 14, lineHeight: 22 },
       Heading: { color: '#ffffff', fontFamily: ['mono'], fontWeight: 'bold', letterSpacing: 1.5 },
@@ -115,7 +150,6 @@ export const VARIANTS: readonly Variant[] = [
     title: 'Night Rain',
     blurb: 'Rain falling in the margins, rings spreading in the puddles at the corners. Has sound.',
     scene: nightRainSvg,
-    glass: GLASS,
     sound: RAIN_SOUND,
   },
   {
@@ -123,14 +157,12 @@ export const VARIANTS: readonly Variant[] = [
     title: 'Topography',
     blurb: 'Contour lines of three hills on a map sheet, a slow ping running out from each summit.',
     scene: topographySvg,
-    glass: GLASS,
   },
   {
     id: 'murmuration',
     title: 'Murmuration',
     blurb: 'A flock of starlings folding and stretching in the top right corner under a crescent moon.',
     scene: murmurationSvg,
-    glass: GLASS,
   },
   {
     id: 'void',
