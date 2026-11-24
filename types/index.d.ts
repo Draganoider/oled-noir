@@ -17,6 +17,8 @@ declare module 'claude-code' {
       text: string | null
       /** How your own messages look, as the card marks it: `outline`, `ring`, `soft`, `glass`, `inverted` or `none`. */
       bubble: string | null
+      /** How tool call rows look, as the card marks it: `card`, `outline`, `terminal`, `pill`, `soft`, `quiet` or `none`. */
+      tools: string | null
     }
   }
 }

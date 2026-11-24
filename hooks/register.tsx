@@ -5,6 +5,7 @@ import { makeColors } from './make-colors.js'
 import {
   BUBBLE_NOTES,
   DEFAULT_BUBBLE,
+  DEFAULT_TOOL,
   DEFAULT_GLASS,
   DEFAULT_TEXT,
   DEFAULT_VARIANT,
@@ -12,17 +13,20 @@ import {
   GLASS_NOTES,
   TEXT_BACKINGS,
   TEXT_NOTES,
+  TOOL_NOTES,
+  TOOL_ROWS,
   USER_BUBBLES,
   VARIANTS,
   glassWord,
   isGlassLevel,
   isTextBacking,
+  isToolRow,
   isUserBubble,
   keyOf,
   styleOf,
   variantNamed,
 } from './variants'
-import type { GlassLevel, TextBacking, UserBubble, Variant } from './variants'
+import type { GlassLevel, TextBacking, ToolRow, UserBubble, Variant } from './variants'
 
 const PLUGIN = 'oled-noir'
 const COMMAND = 'noir'
@@ -31,16 +35,19 @@ const CHOICE_KEY = 'variant'
 const GLASS_KEY = 'glass'
 const TEXT_KEY = 'text'
 const BUBBLE_KEY = 'bubble'
+const TOOL_KEY = 'tools'
 const OFF = 'off'
 const GLASS_ORDER = Object.keys(GLASS_LEVELS) as GlassLevel[]
 const TEXT_ORDER = Object.keys(TEXT_BACKINGS) as TextBacking[]
 const BUBBLE_ORDER = Object.keys(USER_BUBBLES) as UserBubble[]
+const TOOL_ORDER = Object.keys(TOOL_ROWS) as ToolRow[]
 
 const isCardOpen = atom({ plugin: 'oled-noir', key: 'isCardOpen' } as const, false)
 const applied = atom({ plugin: 'oled-noir', key: 'applied' } as const, null)
 const panelGlass = atom({ plugin: 'oled-noir', key: 'glass' } as const, null)
 const textBacking = atom({ plugin: 'oled-noir', key: 'text' } as const, null)
 const userBubble = atom({ plugin: 'oled-noir', key: 'bubble' } as const, null)
+const toolRow = atom({ plugin: 'oled-noir', key: 'tools' } as const, null)
 
 // True black for an OLED panel: every surface sits a hair above #000, text is soft white (not pure,
 // which blooms on OLED), and the roles keep just enough hue that red still means trouble.
@@ -101,6 +108,7 @@ export function lookOf(
   glass: GlassLevel = DEFAULT_GLASS,
   text: TextBacking = DEFAULT_TEXT,
   bubble: UserBubble = DEFAULT_BUBBLE,
+  tool: ToolRow = DEFAULT_TOOL,
 ): ThemeSetArgs {
   return {
     colors: COLORS,
@@ -109,7 +117,7 @@ export function lookOf(
       variant.scene === undefined
         ? { color: '#000000' }
         : { scene: variant.id, glass: glassOf(glass) },
-    ...(withStyle && { style: styleOf(variant, text, bubble) }),
+    ...(withStyle && { style: styleOf(variant, text, bubble, tool) }),
     ...(withSound && variant.sound !== undefined && { sound: variant.sound }),
   }
 }
@@ -122,24 +130,25 @@ async function setLook($: EngineInterface, variant: Variant): Promise<ThemeResul
   const glass = await storedGlass($)
   const text = await storedText($)
   const bubble = await storedBubble($)
+  const tool = await storedTool($)
   let failure: unknown
 
   if (variant.sound !== undefined) {
     try {
-      return await $.theme.set(lookOf(variant, true, true, glass, text, bubble))
+      return await $.theme.set(lookOf(variant, true, true, glass, text, bubble, tool))
     } catch (error) {
       failure = error
     }
   }
 
   try {
-    return await $.theme.set(lookOf(variant, false, true, glass, text, bubble))
+    return await $.theme.set(lookOf(variant, false, true, glass, text, bubble, tool))
   } catch (error) {
     failure ??= error
   }
 
   try {
-    return await $.theme.set(lookOf(variant, false, false, glass, text, bubble))
+    return await $.theme.set(lookOf(variant, false, false, glass, text, bubble, tool))
   } catch (error) {
     throw failure ?? error
   }
@@ -263,6 +272,44 @@ async function setBubble($: EngineInterface, bubble: UserBubble): Promise<string
   return said
 }
 
+/** How tool call rows look: the stored kind, else the default. A store that fails counts as none. */
+async function storedTool($: EngineInterface): Promise<ToolRow> {
+  try {
+    const stored = await $.store.get(TOOL_KEY)
+
+    return isToolRow(stored) ? stored : DEFAULT_TOOL
+  } catch {
+    return DEFAULT_TOOL
+  }
+}
+
+/** Keeps a tool row kind and puts the look showing on again with it. */
+async function setTool($: EngineInterface, tool: ToolRow): Promise<string> {
+  try {
+    await $.store.set(TOOL_KEY, tool)
+  } catch (error) {
+    return `The tool row look could not be saved: ${reasonOf(error)}`
+  }
+
+  await update($, toolRow, () => tool)
+
+  const now = await read($, applied)
+  const variant = now === null ? undefined : variantNamed(now)
+  const said = `Tool rows now use ${tool}: ${TOOL_NOTES[tool]}.`
+
+  if (variant === undefined) {
+    return `${said} It shows once a look is on.`
+  }
+
+  try {
+    await setLook($, variant)
+  } catch (error) {
+    return `${said} The look could not be set again: ${reasonOf(error)}`
+  }
+
+  return said
+}
+
 /** The variant the store holds, the default where it holds none, or OFF. */
 async function storedChoice($: EngineInterface): Promise<Variant | typeof OFF> {
   const stored = await $.store.get(CHOICE_KEY)
@@ -327,6 +374,15 @@ export function listText(): string {
     `/${COMMAND} glass lists the kinds of panel glass, /${COMMAND} glass <kind> picks one, /${COMMAND} glass next steps through them.`,
     `/${COMMAND} text lists what can sit behind reply text, /${COMMAND} text <kind> picks one, /${COMMAND} text next steps through them.`,
     `/${COMMAND} bubble lists the looks for your own messages, /${COMMAND} bubble <kind> picks one, /${COMMAND} bubble next steps through them.`,
+    `/${COMMAND} tools lists the looks for tool call rows, /${COMMAND} tools <kind> picks one, /${COMMAND} tools next steps through them.`,
+  ].join('\n')
+}
+
+function toolList(now: ToolRow): string {
+  return [
+    `Tool call rows (now ${now}):`,
+    ...TOOL_ORDER.map(tool => `  ${tool === now ? '✓' : ' '} ${tool}: ${TOOL_NOTES[tool]}`),
+    `/${COMMAND} tools <kind> picks one, /${COMMAND} tools next steps to the next.`,
   ].join('\n')
 }
 
@@ -408,6 +464,19 @@ async function runCommand($: EngineInterface, args: string): Promise<string> {
     return bubble === '' ? bubbleList(now) : `No bubble named "${bubble}". ${bubbleList(now)}`
   }
 
+  if (key === 'tools' || key.startsWith('tools-') || key === 'tool' || key.startsWith('tool-')) {
+    const tool = key.replace(/^tools?-?/, '')
+    const now = await storedTool($)
+
+    if (tool === 'next') {
+      return setTool($, TOOL_ORDER[(TOOL_ORDER.indexOf(now) + 1) % TOOL_ORDER.length] ?? DEFAULT_TOOL)
+    }
+
+    if (isToolRow(tool)) return setTool($, tool)
+
+    return tool === '' ? toolList(now) : `No tool row named "${tool}". ${toolList(now)}`
+  }
+
   const variant = variantNamed(name)
 
   return variant === undefined ? `No look named "${name}". ${listText()}` : pick($, variant)
@@ -480,6 +549,8 @@ export const register: Register = on => {
     const text = isTextBacking(keptText) ? keptText : await storedText($)
     const keptBubble = await read($, userBubble)
     const bubble = isUserBubble(keptBubble) ? keptBubble : await storedBubble($)
+    const keptTool = await read($, toolRow)
+    const tool = isToolRow(keptTool) ? keptTool : await storedTool($)
 
     return (
       <Box flexDirection="column" borderStyle="round" paddingX={1} gap="md">
@@ -557,6 +628,29 @@ export const register: Register = on => {
                   const said = await setBubble($, kind)
 
                   if (!said.startsWith('Your messages now use') || said.includes('could not')) {
+                    void $.ui.toast(said)
+                  }
+                }}
+              >
+                {shown}
+              </Button>
+            )
+          })}
+        </Box>
+        <Box flexDirection="row" flexWrap="wrap" gap={1}>
+          <Text dimColor>Tools</Text>
+          {TOOL_ORDER.map(kind => {
+            const word = kind.charAt(0).toUpperCase() + kind.slice(1)
+            const shown = tool === kind ? `✓ ${word}` : word
+
+            return (
+              <Button
+                key={`tools-${kind}`}
+                label={shown}
+                onPress={async () => {
+                  const said = await setTool($, kind)
+
+                  if (!said.startsWith('Tool rows now use') || said.includes('could not')) {
                     void $.ui.toast(said)
                   }
                 }}

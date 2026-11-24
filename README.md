@@ -48,6 +48,8 @@ Behind the words of each reply sits a backing, so text stays readable over the s
 
 Your own messages have a bubble of their own. `/noir bubble` lists the kinds: `outline` (the default: black with a thin gray edge), `ring` (a black pill with a white edge), `soft`, `glass` (a faint white tint), `inverted` (a white bubble with black words) and `none`. `/noir bubble <kind>` picks one, `/noir bubble next` steps through them, and the You row on the `/noir` card does the same.
 
+The rows that show Claude's tool calls ("Edited a file, ran 3 commands") have their own look too. `/noir tools` lists the kinds: `card` (the default), `outline`, `terminal` (a thin white frame), `pill`, `soft`, `quiet` (dim type, no frame) and `none` (the app's own). `/noir tools <kind>` picks one, `/noir tools next` steps through them, and the Tools row on the `/noir` card does the same. The box you type in keeps the app's own look: no theme reaches it.
+
 Sound plays only after you press the speaker in the session's title bar. With reduced motion turned on in your system, every scene rests as a still picture.
 
 ## License

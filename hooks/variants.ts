@@ -1,6 +1,7 @@
 import type {
   ThemeBackdropGlass,
   ThemeMessageRule,
+  ThemeToolRule,
   ThemeSound,
   ThemeStyle,
   ThemeTypeRule,
@@ -135,6 +136,46 @@ export function isUserBubble(text: unknown): text is UserBubble {
 }
 
 /**
+ * How the rows of Claude's tool calls look ("Edited a file, ran 3 commands"). The opaque kinds name their
+ * text color; the soft one lets the app pick, as for reply text.
+ */
+export const TOOL_ROWS = {
+  card: { color: '#b8b8b8', backgroundColor: '#050505', borderColor: '#1e1e1e', radius: 8, fontFamily: ['code'] },
+  outline: { color: '#a6a6a6', backgroundColor: '#000000', borderColor: '#3a3a3a', radius: 8, fontFamily: ['code'] },
+  terminal: {
+    color: '#e6e6e6',
+    backgroundColor: '#000000',
+    borderColor: '#e6e6e6',
+    borderWidth: 1,
+    radius: 2,
+    fontFamily: ['code'],
+  },
+  pill: { color: '#d0d0d0', backgroundColor: '#111111', radius: 20, paddingX: 14, fontFamily: ['sans'] },
+  soft: { backgroundColor: '#000000d6', radius: 12, shadow: { blur: 18, color: '#000000cc' }, fontFamily: ['code'] },
+  quiet: { color: '#7a7a7a', backgroundColor: '#000000', radius: 0, paddingX: 2, fontFamily: ['code'] },
+  none: {},
+} as const satisfies Record<string, ThemeToolRule>
+
+export type ToolRow = keyof typeof TOOL_ROWS
+
+/** One line on each kind of tool row, for the list. */
+export const TOOL_NOTES: Record<ToolRow, string> = {
+  card: 'a near-black card with a faint edge and code type (the original look)',
+  outline: 'black with a clearer gray outline',
+  terminal: 'black with a thin white frame and bright code type, like a terminal',
+  pill: 'a rounded dark pill in plain type',
+  soft: 'nearly black with smoky, fading edges',
+  quiet: 'dim gray code type on black, no frame: barely there',
+  none: "the app's own tool rows",
+}
+
+export const DEFAULT_TOOL: ToolRow = 'card'
+
+export function isToolRow(text: unknown): text is ToolRow {
+  return typeof text === 'string' && Object.hasOwn(TOOL_ROWS, text)
+}
+
+/**
  * The rows every variant shares: a black bubble with a hairline round your own messages,
  * and tool calls as quiet code rows. What sits behind a reply's words is its own setting.
  */
@@ -142,14 +183,7 @@ export const BASE_STYLE: ThemeStyle = {
   Heading: { color: '#ffffff', fontWeight: 'semibold', letterSpacing: 0.3 },
   UserMessage: { paddingX: 14, paddingY: 10 },
   AssistantMessage: { paddingX: 6 },
-  ToolUse: {
-    color: '#b8b8b8',
-    backgroundColor: '#050505',
-    borderColor: '#1e1e1e',
-    radius: 8,
-    paddingX: 8,
-    fontFamily: ['code'],
-  },
+  ToolUse: { paddingX: 8 },
 }
 
 const RAIN_SOUND: ThemeSound = {
@@ -263,6 +297,7 @@ export function styleOf(
   variant: Variant,
   backing: TextBacking = DEFAULT_TEXT,
   bubble: UserBubble = DEFAULT_BUBBLE,
+  tool: ToolRow = DEFAULT_TOOL,
 ): ThemeStyle {
   const own = variant.style ?? {}
   const isOpaque = backing === 'black'
@@ -276,5 +311,6 @@ export function styleOf(
     Heading: isOpaque ? heading : (withoutColor(heading) ?? {}),
     AssistantMessage: { ...BASE_STYLE.AssistantMessage, ...TEXT_BACKINGS[backing] },
     UserMessage: { ...BASE_STYLE.UserMessage, ...USER_BUBBLES[bubble] },
+    ToolUse: tool === 'none' ? {} : { ...BASE_STYLE.ToolUse, ...TOOL_ROWS[tool] },
   }
 }

@@ -2,7 +2,7 @@ import { expect, test } from 'claude-code/testing'
 import type { ThemeSetArgs } from 'claude-code'
 
 import { listText, lookOf, sceneSource } from './register'
-import { GLASS_LEVELS, TEXT_BACKINGS, USER_BUBBLES, VARIANTS } from './variants'
+import { GLASS_LEVELS, TEXT_BACKINGS, TOOL_ROWS, USER_BUBBLES, VARIANTS } from './variants'
 
 test('every scene is a whole, pure-vector SVG the engine takes', () => {
   for (const variant of VARIANTS) {
@@ -97,6 +97,25 @@ test('your messages keep the outline bubble by default, and each kind reaches th
     const look = lookOf(eclipse, false, true, 'bare', 'soft', name as keyof typeof USER_BUBBLES)
 
     expect(look.style?.UserMessage).toEqual({ paddingX: 14, paddingY: 10, ...rule })
+  }
+})
+
+test('tool rows keep the original card by default, and each kind reaches the theme', () => {
+  const eclipse = VARIANTS.find(variant => variant.id === 'eclipse')!
+
+  expect(lookOf(eclipse, false, true).style?.ToolUse).toEqual({
+    paddingX: 8,
+    color: '#b8b8b8',
+    backgroundColor: '#050505',
+    borderColor: '#1e1e1e',
+    radius: 8,
+    fontFamily: ['code'],
+  })
+
+  for (const [name, rule] of Object.entries(TOOL_ROWS)) {
+    const look = lookOf(eclipse, false, true, 'bare', 'soft', 'outline', name as keyof typeof TOOL_ROWS)
+
+    expect(look.style?.ToolUse).toEqual(name === 'none' ? {} : { paddingX: 8, ...rule })
   }
 })
 
