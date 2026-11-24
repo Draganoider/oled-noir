@@ -1,0 +1,12 @@
+{
+  "name": "oled-noir",
+  "description": "OLED Noir: true-black looks for the Claude desktop app, made for OLED screens.",
+  "owner": { "name": "Draganoider", "url": "https://github.com/Draganoider" },
+  "plugins": [
+    {
+      "name": "oled-noir",
+      "source": "./",
+      "description": "True-black OLED looks for the Claude desktop app: black and white animated scenes behind the chat."
+    }
+  ]
+}

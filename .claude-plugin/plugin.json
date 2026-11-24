@@ -1,0 +1,11 @@
+{
+  "name": "oled-noir",
+  "version": "0.1.0",
+  "description": "True-black OLED looks for the Claude desktop app: black and white animated scenes behind the chat. /noir picks one.",
+  "author": { "name": "Draganoider", "url": "https://github.com/Draganoider" },
+  "homepage": "https://github.com/Draganoider/oled-noir",
+  "repository": "https://github.com/Draganoider/oled-noir",
+  "license": "MIT",
+  "keywords": ["theme", "oled", "black", "dark", "monochrome", "backdrop", "animated"],
+  "types": "./types/index.d.ts"
+}
