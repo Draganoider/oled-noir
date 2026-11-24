@@ -2,34 +2,17 @@ import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register, ThemeResult, ThemeSetArgs } from 'claude-code'
 
 import { makeColors } from './make-colors.js'
-import {
-  DEFAULT_GLASS,
-  DEFAULT_VARIANT,
-  GLASS_LEVELS,
-  VARIANTS,
-  isGlassLevel,
-  keyOf,
-  styleOf,
-  variantNamed,
-} from './variants'
-import type { GlassLevel, Variant } from './variants'
+import { DEFAULT_VARIANT, VARIANTS, keyOf, styleOf, variantNamed } from './variants'
+import type { Variant } from './variants'
 
 const PLUGIN = 'oled-noir'
 const COMMAND = 'noir'
 // One choice for every session and project: the look is yours, not the project's.
 const CHOICE_KEY = 'variant'
-const GLASS_KEY = 'glass'
 const OFF = 'off'
-const GLASS_WORDS: Record<GlassLevel, string> = {
-  clear: 'Clear',
-  light: 'Light',
-  frosted: 'Frosted',
-  solid: 'Solid',
-}
 
 const isCardOpen = atom({ plugin: 'oled-noir', key: 'isCardOpen' } as const, false)
 const applied = atom({ plugin: 'oled-noir', key: 'applied' } as const, null)
-const panelGlass = atom({ plugin: 'oled-noir', key: 'glass' } as const, null)
 
 // True black for an OLED panel: every surface sits a hair above #000, text is soft white (not pure,
 // which blooms on OLED), and the roles keep just enough hue that red still means trouble.
@@ -76,19 +59,14 @@ function reasonOf(error: unknown): string {
 }
 
 /** The whole look for a variant: the palette, its backdrop, its rows and, where it has one, its sound. */
-export function lookOf(
-  variant: Variant,
-  withSound: boolean,
-  withStyle: boolean,
-  glass: GlassLevel = DEFAULT_GLASS,
-): ThemeSetArgs {
+export function lookOf(variant: Variant, withSound: boolean, withStyle: boolean): ThemeSetArgs {
   return {
     colors: COLORS,
     overrideColorScheme: 'dark',
     backdrop:
       variant.scene === undefined
         ? { color: '#000000' }
-        : { scene: variant.id, glass: { ...GLASS_LEVELS[glass] } },
+        : { scene: variant.id, glass: variant.glass ?? false },
     ...(withStyle && { style: styleOf(variant) }),
     ...(withSound && variant.sound !== undefined && { sound: variant.sound }),
   }
@@ -99,70 +77,27 @@ export function lookOf(
  * so it is asked again without the sound, then without the style too.
  */
 async function setLook($: EngineInterface, variant: Variant): Promise<ThemeResult> {
-  const glass = await storedGlass($)
   let failure: unknown
 
   if (variant.sound !== undefined) {
     try {
-      return await $.theme.set(lookOf(variant, true, true, glass))
+      return await $.theme.set(lookOf(variant, true, true))
     } catch (error) {
       failure = error
     }
   }
 
   try {
-    return await $.theme.set(lookOf(variant, false, true, glass))
+    return await $.theme.set(lookOf(variant, false, true))
   } catch (error) {
     failure ??= error
   }
 
   try {
-    return await $.theme.set(lookOf(variant, false, false, glass))
+    return await $.theme.set(lookOf(variant, false, false))
   } catch (error) {
     throw failure ?? error
   }
-}
-
-/** How see-through the panels are: the stored level, else the default. A store that fails counts as none. */
-async function storedGlass($: EngineInterface): Promise<GlassLevel> {
-  try {
-    const stored = await $.store.get(GLASS_KEY)
-
-    return isGlassLevel(stored) ? stored : DEFAULT_GLASS
-  } catch {
-    return DEFAULT_GLASS
-  }
-}
-
-/** Keeps a glass level and puts the look showing on again with it. */
-async function setGlass($: EngineInterface, level: GlassLevel): Promise<string> {
-  try {
-    await $.store.set(GLASS_KEY, level)
-  } catch (error) {
-    return `The panel glass could not be saved: ${reasonOf(error)}`
-  }
-
-  await update($, panelGlass, () => level)
-
-  const now = await read($, applied)
-  const variant = now === null ? undefined : variantNamed(now)
-  const said = `Panels are now ${GLASS_WORDS[level].toLowerCase()}.`
-
-  if (variant === undefined) {
-    return `${said} It shows once a look is on.`
-  }
-
-  if (variant.scene === undefined) {
-    return `${said} ${variant.title} has no scene to see through, so it shows with the other looks.`
-  }
-
-  try {
-    await setLook($, variant)
-  } catch (error) {
-    return `${said} The look could not be set again: ${reasonOf(error)}`
-  }
-
-  return said
 }
 
 /** The variant the store holds, the default where it holds none, or OFF. */
@@ -226,7 +161,6 @@ export function listText(): string {
     `OLED Noir has ${VARIANTS.length} looks:`,
     ...VARIANTS.map(variant => `  ${variant.id}: ${variant.blurb}`),
     `/${COMMAND} <name> puts one on, /${COMMAND} next steps to the next, /${COMMAND} off turns it off.`,
-    `/${COMMAND} glass clear|light|frosted|solid sets how see-through the side panels are.`,
   ].join('\n')
 }
 
@@ -244,14 +178,6 @@ async function runCommand($: EngineInterface, args: string): Promise<string> {
   if (key === 'list') return listText()
   if (key === 'off') return turnOff($)
   if (key === 'next') return pick($, await nextVariant($))
-
-  if (key === 'glass' || key.startsWith('glass-')) {
-    const level = key.slice('glass-'.length)
-
-    return isGlassLevel(level)
-      ? setGlass($, level)
-      : `Panels are ${GLASS_WORDS[await storedGlass($)].toLowerCase()}. Try /${COMMAND} glass clear, light, frosted or solid.`
-  }
 
   const variant = variantNamed(name)
 
@@ -319,8 +245,6 @@ export const register: Register = on => {
 
     const { Box, Text, Button } = $.ui.resolve(e)
     const now = await read($, applied)
-    const keptGlass = await read($, panelGlass)
-    const glass = isGlassLevel(keptGlass) ? keptGlass : await storedGlass($)
 
     return (
       <Box flexDirection="column" borderStyle="round" paddingX={1} gap="md">
@@ -338,28 +262,6 @@ export const register: Register = on => {
           <Button key="close" label="Close" role="dismiss" onPress={() => update($, isCardOpen, () => false)}>
             Close
           </Button>
-        </Box>
-        <Box flexDirection="row" flexWrap="wrap" gap={1}>
-          <Text dimColor>Panels</Text>
-          {(Object.keys(GLASS_LEVELS) as GlassLevel[]).map(level => {
-            const word = glass === level ? `✓ ${GLASS_WORDS[level]}` : GLASS_WORDS[level]
-
-            return (
-              <Button
-                key={`glass-${level}`}
-                label={word}
-                onPress={async () => {
-                  const said = await setGlass($, level)
-
-                  if (!said.startsWith('Panels are now') || said.includes('could not')) {
-                    void $.ui.toast(said)
-                  }
-                }}
-              >
-                {word}
-              </Button>
-            )
-          })}
         </Box>
         {VARIANTS.map(variant => {
           const isOn = now === variant.id

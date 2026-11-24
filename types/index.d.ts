@@ -1,9 +1,6 @@
 /** A look's id, such as `eclipse`, or null for none. */
 export type AppliedLook = string | null
 
-/** How see-through the side panels are: `clear`, `light`, `frosted` or `solid`, or null before it is read. */
-export type PanelGlass = string | null
-
 declare module 'claude-code' {
   interface PluginState {
     'oled-noir': {
@@ -11,8 +8,6 @@ declare module 'claude-code' {
       isCardOpen: boolean
       /** The look this session shows. */
       applied: AppliedLook
-      /** The panel glass the card marks as chosen. */
-      glass: PanelGlass
     }
   }
 }
