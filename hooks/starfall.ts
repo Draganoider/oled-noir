@@ -51,8 +51,8 @@ const v = values({ working: [0, 1], pace: [0, 1], base: [0, 4], peak: [0, 20], r
 const SLOTS = 96
 /** Seconds between one slot's stars: a lit slot starts a star this often. */
 const PERIOD = 3.2
-/** Half a strip's width, in points: room for the glow round the head. */
-const HALF_WIDTH = 5
+/** Half a strip's width, in points: room for the glow round the head, and no more. */
+const HALF_WIDTH = 3.5
 
 function hash(seed: number): number {
   return fract(sin(seed * 12.9898 + 78.233) * 43758.5453)
@@ -70,8 +70,10 @@ const charge: Buffer = buffer({ size: [1, 1], float: 16, filter: 'nearest' }, ()
 // The stars are drawn straight onto the picture, added over it, with no buffer the size of the window:
 // a 4K window costs only the strips the stars cover, and no texture has to reach its width.
 const fall = shapes(
-  // At most about 60 strips of up to 340 by 10 points show at once: under a third of a window.
-  { count: 4, instances: SLOTS, cover: 0.4, draw: 'strip', blend: 'add' },
+  // The app budgets the draw by this, so it is kept true. At the stormiest, about 74 slots are lit and
+  // at most all of them show at once, each a strip of up to about 185 by 7 points: under 0.07 of a
+  // 1512 by 945 window. Strips are measured in points, so a wider window costs no more.
+  { count: 4, instances: SLOTS, cover: 0.07, draw: 'strip', blend: 'add' },
   (vertex, slot) => {
     const build = charge.at(vec2(0, 0)).x
     const rate = mix(v.base * v.working, v.peak, pow(build, 1.4)) * (0.85 + 0.3 * v.pace)
@@ -96,7 +98,7 @@ const fall = shapes(
     // Every star starts inside the window, so none is spent falling where no one sees it.
     const start = vec2(size.x * (0.15 + hash(seed + 0.5) * 0.85), size.y * (0.35 + hash(seed + 1.3) * 0.63))
     const head = vec2(start + way * speed * age)
-    const tail = min(speed * age, 90 + hash(seed + 6.7) * 120) + 1
+    const tail = min(speed * age, 80 + hash(seed + 6.7) * 80) + 1
     const smear = speed * dt
     const fade = lit * smoothstep(0, 0.1, done) * (1 - smoothstep(0.65, 1, done))
 
@@ -121,7 +123,7 @@ const fall = shapes(
     const streak = along * along * exp(-(side * side) / (thin * thin))
     // The head, smeared over the last frame's travel, so it moves smoothly between frames.
     const fromHead = max(behind - smear, 0) + min(behind, 0) * -1
-    const spark = exp(-(fromHead * fromHead + side * side) / 6)
+    const spark = exp(-(fromHead * fromHead + side * side) / 4)
     // Keep the prompt box clear.
     const box =
       step(composer.x, spot.uv.x) * step(spot.uv.x, composer.z) * step(composer.y, spot.uv.y) * step(spot.uv.y, composer.w)

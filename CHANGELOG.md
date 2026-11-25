@@ -2,6 +2,12 @@
 
 All notable changes to OLED Noir are listed here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/).
 
+## [1.3.4] - 2026-11-25
+
+### Fixed
+
+- **Starfall** could freeze and drop to a lower resolution on wide or large screens: the app budgets a shader by the area it says it draws, and Starfall claimed far more than its stars cover. It now claims what it draws, with slimmer strips, and costs about half as much a frame on slower GPUs.
+
 ## [1.3.3] - 2026-11-25
 
 ### Changed
@@ -71,6 +77,7 @@ The first public release.
   - `/noir tools`: seven looks for tool call rows.
 - A true-black palette: a `#000000` page, soft white text, and faintly tinted status colors.
 
+[1.3.4]: https://github.com/Draganoider/oled-noir/releases/tag/v1.3.4
 [1.3.3]: https://github.com/Draganoider/oled-noir/releases/tag/v1.3.3
 [1.3.2]: https://github.com/Draganoider/oled-noir/releases/tag/v1.3.2
 [1.3.1]: https://github.com/Draganoider/oled-noir/releases/tag/v1.3.1
