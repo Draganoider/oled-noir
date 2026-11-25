@@ -238,7 +238,7 @@ On an OLED screen a black pixel is switched off: it draws no power and gives no 
 - **Light at the edges.** Each scene keeps its subject in the margins, away from the words and the prompt.
 - **Nothing bright stands still.** Every scene drifts, turns or falls, slowly, so no bright shape sits on one spot of the panel for hours.
 - **Void** turns off everything but the words, for the least power of all.
-- **Black and white, with meaning kept.** Red, green and amber stay faintly tinted, so an error or a success still reads at a glance.
+- **Black and white, with meaning kept.** Red, green and amber stay faintly tinted, so an error or a success still reads at a glance, and links keep the app's own blue.
 
 ## Sound
 

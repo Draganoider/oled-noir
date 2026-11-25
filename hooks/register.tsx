@@ -57,12 +57,13 @@ const toolRow = atom({ plugin: 'oled-noir', key: 'tools' } as const, null)
 const starDensity = atom({ plugin: 'oled-noir', key: 'stars' } as const, null)
 
 // True black for an OLED panel: every surface sits a hair above #000, text is soft white (not pure,
-// which blooms on OLED), and the roles keep just enough hue that red still means trouble.
+// which blooms on OLED), and the roles keep just enough hue that red still means trouble. The accent is
+// left as the app's own, so links, the icons beside them and toggles look as they do without a theme.
 const { theme: COLORS, problems } = makeColors({
   label: 'OLED Noir',
   id: 'oled-noir',
   only: 'dark',
-  roles: { accent: '#ffffff', danger: '#ff6b6b', success: '#8fd19e', warning: '#e6c77e', pro: '#bdbdbd' },
+  roles: { danger: '#ff6b6b', success: '#8fd19e', warning: '#e6c77e', pro: '#bdbdbd' },
   dark: {
     gray: {
       anchors: {
