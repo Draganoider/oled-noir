@@ -2,7 +2,15 @@ import { expect, test } from 'claude-code/testing'
 import type { ThemeSetArgs } from 'claude-code'
 
 import { listText, liveValues, lookOf, sceneSource } from './register'
-import { GLASS_LEVELS, TEXT_BACKINGS, TOOL_ROWS, USER_BUBBLES, VARIANTS } from './variants'
+import {
+  DEFAULT_STARS,
+  GLASS_LEVELS,
+  STAR_DENSITIES,
+  TEXT_BACKINGS,
+  TOOL_ROWS,
+  USER_BUBBLES,
+  VARIANTS,
+} from './variants'
 
 test('every scene is a whole, pure-vector SVG the engine takes', () => {
   for (const variant of VARIANTS) {
@@ -201,9 +209,22 @@ test('Starfall draws its still sky under the falling-star shader', async ($) => 
   await ui.unmount()
 })
 
-test('the shader hears nothing at rest, and a pace in four steps while Claude works', () => {
-  expect(liveValues(0, 500)).toEqual({ working: 0, pace: 0 })
-  expect(liveValues(1, 0)).toEqual({ working: 1, pace: 0 })
-  expect(liveValues(1, 45).pace).toBe(2 / 3)
-  expect(liveValues(2, 400)).toEqual({ working: 1, pace: 1 })
+test('the shader hears no work at rest, a pace in three steps while Claude works, and the density', () => {
+  expect(liveValues(0, 500, 'steady')).toEqual({ working: 0, pace: 0, ...STAR_DENSITIES.steady })
+  expect(liveValues(1, 0, 'steady')).toMatchObject({ working: 1, pace: 0 })
+  expect(liveValues(1, 45, 'steady').pace).toBe(0.5)
+  expect(liveValues(2, 400, 'storm')).toEqual({ working: 1, pace: 1, ...STAR_DENSITIES.storm })
+})
+
+test('every density builds from a few stars to many, inside the shader\'s ranges', () => {
+  for (const { base, peak, ramp } of Object.values(STAR_DENSITIES)) {
+    expect(base).toBeGreaterThan(0)
+    expect(base).toBeLessThanOrEqual(4)
+    expect(peak).toBeGreaterThan(base * 5)
+    expect(peak).toBeLessThanOrEqual(20)
+    expect(ramp).toBeGreaterThanOrEqual(10)
+    expect(ramp).toBeLessThanOrEqual(600)
+  }
+
+  expect(DEFAULT_STARS).toBe('steady')
 })

@@ -19,6 +19,8 @@ declare module 'claude-code' {
       bubble: string | null
       /** How tool call rows look, as the card marks it: `card`, `outline`, `terminal`, `pill`, `soft`, `quiet` or `none`. */
       tools: string | null
+      /** How thick Starfall's shower grows, as the card marks it: `gentle`, `steady`, `shower` or `storm`. */
+      stars: string | null
     }
   }
 }

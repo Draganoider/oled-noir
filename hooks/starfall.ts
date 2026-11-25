@@ -1,23 +1,35 @@
 // Starfall's falling stars, drawn over the Starfield sky while Claude works.
-// The mod sets two numbers: `working`, 1 while a turn runs, and `pace`, how fast Claude is writing,
-// from 0 to 1. With neither, nothing falls. Working alone, a star falls every eight seconds or so;
-// at full pace, a little more than one a second. The app eases between them, so the sky never jumps.
 //
-// Six slots, each with its own period. In every period a slot lights one star or none, by a fixed hash
-// against the chance the two numbers give, so each star is decided when its period starts.
+// The mod sets five numbers. `working` is 1 while a turn runs. `pace` is how fast Claude last wrote, 0 to 1.
+// `base`, `peak` and `ramp` come from the /noir stars setting: stars a second as work begins, stars a second
+// at the height of it, and the seconds it takes to get there.
+//
+// The longer Claude works, the more stars fall: a one-texel buffer keeps the charge, rising over `ramp`
+// seconds of work and falling away over about twelve once Claude stops, so the shower tapers off
+// rather than snapping out. Nothing is counted in the mod: the charge piles up here, frame by frame.
+//
+// Each star is a thin strip drawn only where it is, 64 at most at once. Every slot has its own period;
+// in each period it lights one star or none, by a fixed hash against the chance the rate gives.
+//
+// The app plays a shader at 60 frames a second at most. On a faster screen a star would step between
+// frames, so each head is smeared along the ground it covered since the last frame, like a camera's blur.
 
 import {
+  buffer,
   clamp,
   composer,
-  dot,
+  dt,
   exp,
   floor,
   fract,
+  max,
   min,
+  mix,
+  normalize,
   picture,
   pow,
-  range,
   shader,
+  shapes,
   sin,
   size,
   smoothstep,
@@ -28,65 +40,103 @@ import {
   vec2,
   vec4,
 } from 'claude-code/shader'
+import type { Buffer } from 'claude-code/shader'
 
-const v = values({ working: [0, 1], pace: [0, 1] })
+const v = values({ working: [0, 1], pace: [0, 1], base: [0, 4], peak: [0, 20], ramp: [10, 600] })
+
+const SLOTS = 64
+/** How many slot periods begin each second, on average: SLOTS over the mean period of four seconds. */
+const STARTS_PER_SECOND = 16
+/** Half a strip's width, in points: room for the glow round the head. */
+const HALF_WIDTH = 5
 
 function hash(seed: number): number {
   return fract(sin(seed * 12.9898 + 78.233) * 43758.5453)
 }
 
+/** The charge, 0 to 1: how long Claude has been at it, against `ramp`. */
+const charge: Buffer = buffer({ size: [1, 1], float: 16, filter: 'nearest' }, () => {
+  const last = charge.at(vec2(0, 0)).x
+  const rising = last + dt / v.ramp
+  const falling = last - dt / 12
+
+  return vec4(clamp(mix(falling, rising, v.working), 0, 1), 0, 0, 1)
+})
+
+/** The stars of this frame, added up. */
+const sky = buffer({})
+
+const fall = shapes(
+  // 64 strips of at most about 340 by 10 points cover under a quarter of a window together.
+  { count: 4, instances: SLOTS, cover: 0.3, draw: 'strip', into: sky, blend: 'add', clear: true },
+  (vertex, slot) => {
+    const build = charge.at(vec2(0, 0)).x
+    const rate = mix(v.base * v.working, v.peak, pow(build, 1.4)) * (0.8 + 0.4 * v.pace)
+    const chance = rate / STARTS_PER_SECOND
+
+    const period = 3 + fract(slot * 0.618) * 2
+    const shifted = time + slot * 2.9
+    const cycle = floor(shifted / period)
+    const age = shifted - cycle * period
+    const seed = cycle * 7.31 + slot * 1.73
+    const life = 1.2 + hash(seed + 2.1) * 0.8
+    const done = age / life
+
+    if (still > 0) return { hide: true }
+    if (hash(seed) >= chance) return { hide: true }
+    if (done > 1) return { hide: true }
+
+    // Down and to the left, as Starfield's own shooting stars fall, each a little steeper or flatter.
+    const way = vec2(normalize(vec2(-0.846 + (hash(seed + 5.3) - 0.5) * 0.25, -0.533)))
+    const across = vec2(-way.y, way.x)
+    const speed = 260 + hash(seed + 3.9) * 160
+    const start = vec2(size.x * (0.05 + hash(seed + 0.5) * 1.15), size.y * (0.3 + hash(seed + 1.3) * 0.75))
+    const head = vec2(start + way * speed * age)
+    const tail = min(speed * age, 90 + hash(seed + 6.7) * 120) + 1
+    const smear = speed * dt
+    const fade = smoothstep(0, 0.1, done) * (1 - smoothstep(0.65, 1, done))
+
+    // A strip from just ahead of the head back to the tail's end: corners 0 and 1 at the front.
+    const back = step(2, vertex) * (tail + smear) - (1 - step(2, vertex)) * 6
+    const side = (step(1, vertex % 2) * 2 - 1) * HALF_WIDTH
+    const point = vec2(head - way * back + across * side)
+
+    return {
+      at: vec4((point.x / size.x) * 2 - 1, (point.y / size.y) * 2 - 1, 0, 1),
+      a: vec4(back, side, tail, fade),
+      b: vec4(smear, 0, 0, 0),
+    }
+  },
+  spot => {
+    const behind = spot.a.x
+    const side = spot.a.y
+    const tail = spot.a.z
+    const smear = spot.b.x
+    const along = clamp(1 - behind / tail, 0, 1) * step(0, behind)
+    const thin = 1.1 * (1 - 0.6 * clamp(behind / tail, 0, 1))
+    const streak = along * along * exp(-(side * side) / (thin * thin))
+    // The head, smeared over the last frame's travel, so it moves smoothly between frames.
+    const fromHead = max(behind - smear, 0) + min(behind, 0) * -1
+    const spark = exp(-(fromHead * fromHead + side * side) / 6)
+    const light = spot.a.w * (streak * 0.8 + spark)
+
+    return vec4(light, light, light, light)
+  },
+)
+
 export default shader({
   fps: 60,
   passes: [
+    charge,
+    sky,
+    fall,
     picture(p => {
-      // Points, with y running up, as the app's own coordinates do.
-      const heat = v.working * (0.18 + 0.82 * v.pace)
-      const chance = 0.85 * pow(heat, 1.3)
-
-      // Idle, or under Reduce Motion: nothing falls, and the pixel costs next to nothing.
-      if (chance < 0.001 || still > 0) return vec4(0, 0, 0, 0)
-
-      const at = vec2(p.uv * size)
-      let light = 0
-
-      for (const slot of range(6)) {
-        const period = 3.2 + slot * 0.37
-        const shifted = time + slot * 2.9
-        const cycle = floor(shifted / period)
-        const age = shifted - cycle * period
-        const seed = cycle * 7.31 + slot * 1.73
-        const life = 0.9 + fract(seed * 0.618) * 0.4
-        const done = age / life
-
-        // A slot with no star this period, or whose star has burnt out, costs nothing more.
-        if (hash(seed) >= chance || done > 1) continue
-
-        // Down and to the left, as Starfield's own shooting stars fall.
-        const way = vec2(-0.846, -0.533)
-        const start = vec2(size.x * (0.2 + hash(seed + 0.5) * 0.95), size.y * (0.58 + hash(seed + 1.3) * 0.4))
-        const travel = 380 + hash(seed + 3.9) * 220
-        const head = vec2(start + way * travel * min(done, 1))
-
-        const toward = vec2(at - head)
-        const behind = dot(toward, way) * -1
-        const side = vec2(toward + way * behind)
-        const sideways = dot(side, side)
-        const tail = 40 + 140 * clamp(done * 4, 0, 1)
-        const along = clamp(1 - behind / tail, 0, 1) * step(0, behind)
-        const thin = 1.1 * (1 - 0.6 * clamp(behind / tail, 0, 1))
-        const streak = along * along * exp(-sideways / (thin * thin))
-        const spark = exp(-dot(toward, toward) / 7)
-        const fade = smoothstep(0, 0.12, done) * (1 - smoothstep(0.6, 1, done))
-
-        light += fade * (streak * 0.8 + spark)
-      }
-
       // Keep the prompt box clear.
       const box =
         step(composer.x, p.uv.x) * step(p.uv.x, composer.z) * step(composer.y, p.uv.y) * step(p.uv.y, composer.w)
-      const shown = clamp(light, 0, 1) * (1 - box)
+      const light = min(sky.sample(p.uv).x, 1) * (1 - box)
 
-      return vec4(shown, shown, shown, shown)
+      return vec4(light, light, light, light)
     }),
   ],
 })

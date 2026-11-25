@@ -2,6 +2,15 @@
 
 All notable changes to OLED Noir are listed here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/).
 
+## [1.3.1] - 2026-11-24
+
+### Changed
+
+- **Starfall** builds up: the longer Claude works, the more stars fall, up to many a second, then the shower tapers off when it stops. Before, it fell back to one star every eight seconds whenever a tool ran.
+- `/noir stars` sets how thick the shower grows: `gentle`, `steady` (the default), `shower` or `storm`. The card has a Starfall row for it.
+- Falling stars are smeared over each frame's travel, so they move smoothly on 120 and 240 Hz screens, where the app's 60-frame shader would otherwise step.
+- Each star is drawn only where it falls, so many stars cost less than the few did before.
+
 ## [1.3.0] - 2026-11-24
 
 ### Added
@@ -49,6 +58,7 @@ The first public release.
   - `/noir tools`: seven looks for tool call rows.
 - A true-black palette: a `#000000` page, soft white text, and faintly tinted status colors.
 
+[1.3.1]: https://github.com/Draganoider/oled-noir/releases/tag/v1.3.1
 [1.3.0]: https://github.com/Draganoider/oled-noir/releases/tag/v1.3.0
 [1.2.0]: https://github.com/Draganoider/oled-noir/releases/tag/v1.2.0
 [1.1.1]: https://github.com/Draganoider/oled-noir/releases/tag/v1.1.1

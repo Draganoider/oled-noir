@@ -75,7 +75,7 @@ Every look is a pure black page with one slow scene in white light, kept to the 
     <td width="50%" valign="top">
       <img src="assets/scenes/starfall.svg" alt="Starfall: the starfield while Claude works, stars falling" width="100%"><br>
       <b>Starfall</b> · <sub>with sound · live</sub><br>
-      <sub>Starfield's sky, but stars fall only while Claude works, and more of them the faster it writes. At rest the sky is still. <a href="#starfall">How it works</a></sub>
+      <sub>Starfield's sky, but stars fall only while Claude works, more and more the longer it works. At rest the sky is still. <a href="#starfall">How it works</a></sub>
     </td>
   </tr>
   <tr>
@@ -127,7 +127,7 @@ Type **`/noir`** and a card opens above the prompt: every look with a **Try** bu
 | `/noir next` | Steps to the next look |
 | `/noir list` | Names every look and setting |
 | `/noir off` | Turns OLED Noir off (`/noir` brings it back) |
-| `/noir glass` · `text` · `bubble` · `tools` | Lists that setting's choices. Add a name to pick one, or `next` to step through them |
+| `/noir glass` · `text` · `bubble` · `tools` · `stars` | Lists that setting's choices. Add a name to pick one, or `next` to step through them |
 
 Your choices are kept for every session and every project.
 
@@ -205,12 +205,27 @@ Starfall is the one look that answers Claude. Its sky is Starfield's, with no sh
 | Claude is | The sky |
 | --- | --- |
 | Waiting for you | Still: only the drifting stars |
-| Working, running a tool | A star falls every eight seconds or so |
-| Writing fast | More stars, up to a little over one a second |
+| Just starting | A star every few seconds |
+| Working on | More and more stars, the longer it goes |
+| Writing fast | A fifth more on top |
+| Done | The shower tapers off over about twelve seconds |
 
-The pace is how fast Claude streams its reply, its thinking and its tool calls, about four characters to a token, smoothed over a few seconds and kept to four steps, so the sky changes a few times a turn rather than with every word. Subagents' work counts too. Stars never cross the box you type in.
+Subagents' work counts too, and stars never cross the box you type in. How thick the shower grows is a setting, `/noir stars` (or the **Starfall** row on the card):
 
-The shader needs the desktop or mobile app. With **reduced motion** on, or where the app can't play it, Starfall shows its still sky.
+| Kind | Grows to |
+| --- | --- |
+| `gentle` | About two stars a second, after four minutes of work |
+| `steady` ✦ | About five a second, after two and a half minutes |
+| `shower` | About ten a second, after a minute and a half |
+| `storm` | Up to eighteen a second, within a minute |
+
+The pace is how fast Claude streamed its last step, its reply, thinking and tool calls, about four characters to a token. The shader needs the desktop or mobile app. With **reduced motion** on, or where the app can't play it, Starfall shows its still sky.
+
+<details>
+<summary><b>On a 120 or 240 Hz screen</b></summary>
+
+The app plays a theme's shader at 60 frames a second at most. So that the falling stars don't step on a faster screen, each star's head is smeared over the distance it covered since the last frame, the way a camera blurs fast motion. The rest of every scene is animated SVG, which that cap doesn't touch.
+</details>
 
 ## Why OLED
 
@@ -261,7 +276,7 @@ Send a message in the session: a new session draws its theme once the first mess
 
 ## Privacy
 
-OLED Noir sends nothing anywhere. It stores five words on your computer, through Claude Code: the look, glass, text, bubble and tool row you chose. For Starfall it counts how many characters Claude streams, to set the pace: it keeps only that running count, in memory, never the words themselves.
+OLED Noir sends nothing anywhere. It stores six words on your computer, through Claude Code: the look, glass, text, bubble, tool row and star density you chose. For Starfall it counts how many characters Claude streams, to set the pace: it keeps only that running count, in memory, never the words themselves.
 
 ## Develop
 

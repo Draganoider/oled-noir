@@ -7,10 +7,13 @@ import {
   DEFAULT_BUBBLE,
   DEFAULT_TOOL,
   DEFAULT_GLASS,
+  DEFAULT_STARS,
   DEFAULT_TEXT,
   DEFAULT_VARIANT,
   GLASS_LEVELS,
   GLASS_NOTES,
+  STAR_DENSITIES,
+  STAR_NOTES,
   TEXT_BACKINGS,
   TEXT_NOTES,
   TOOL_NOTES,
@@ -19,6 +22,7 @@ import {
   VARIANTS,
   glassWord,
   isGlassLevel,
+  isStarDensity,
   isTextBacking,
   isToolRow,
   isUserBubble,
@@ -26,7 +30,7 @@ import {
   styleOf,
   variantNamed,
 } from './variants'
-import type { GlassLevel, TextBacking, ToolRow, UserBubble, Variant } from './variants'
+import type { GlassLevel, StarDensity, TextBacking, ToolRow, UserBubble, Variant } from './variants'
 
 const PLUGIN = 'oled-noir'
 const COMMAND = 'noir'
@@ -36,11 +40,13 @@ const GLASS_KEY = 'glass'
 const TEXT_KEY = 'text'
 const BUBBLE_KEY = 'bubble'
 const TOOL_KEY = 'tools'
+const STARS_KEY = 'stars'
 const OFF = 'off'
 const GLASS_ORDER = Object.keys(GLASS_LEVELS) as GlassLevel[]
 const TEXT_ORDER = Object.keys(TEXT_BACKINGS) as TextBacking[]
 const BUBBLE_ORDER = Object.keys(USER_BUBBLES) as UserBubble[]
 const TOOL_ORDER = Object.keys(TOOL_ROWS) as ToolRow[]
+const STAR_ORDER = Object.keys(STAR_DENSITIES) as StarDensity[]
 
 const isCardOpen = atom({ plugin: 'oled-noir', key: 'isCardOpen' } as const, false)
 const applied = atom({ plugin: 'oled-noir', key: 'applied' } as const, null)
@@ -48,6 +54,7 @@ const panelGlass = atom({ plugin: 'oled-noir', key: 'glass' } as const, null)
 const textBacking = atom({ plugin: 'oled-noir', key: 'text' } as const, null)
 const userBubble = atom({ plugin: 'oled-noir', key: 'bubble' } as const, null)
 const toolRow = atom({ plugin: 'oled-noir', key: 'tools' } as const, null)
+const starDensity = atom({ plugin: 'oled-noir', key: 'stars' } as const, null)
 
 // True black for an OLED panel: every surface sits a hair above #000, text is soft white (not pure,
 // which blooms on OLED), and the roles keep just enough hue that red still means trouble.
@@ -91,58 +98,86 @@ export function sceneSource(variant: Variant): string | undefined {
 
 // ---------------------------------------------------------------- Starfall's pace
 //
-// Starfall's stars fall only while Claude works, and more of them the faster it writes. The mod tells its
-// shader two numbers: `working`, 1 while any turn of this session runs (subagents' too), and `pace`, the
-// tokens a second Claude streams, smoothed over a few seconds and cut to four steps so the sky changes
-// a few times a turn rather than on every word. Tokens are counted roughly, four characters each, from
-// the text, thinking and tool input as it streams; a tool running streams nothing, so the pace eases down.
+// Starfall's stars fall only while Claude works, more and more the longer it works. The mod tells its
+// shader whether Claude is working (any turn of this session running, subagents' too), how fast it wrote
+// in its last step, and the /noir stars setting. The build-up over time happens in the shader itself, so
+// the mod sends only changes: a turn starting or ending, a step's pace, a new setting.
+//
+// The pace is a step's streamed text, thinking and tool input, about four characters a token, over the
+// step's time, cut to three steps so the sky changes a few times a turn rather than on every word.
 
 /** Tokens a second that count as full pace. */
 const FULL_PACE = 90
-const PACE_STEPS = 4
+const PACE_STEPS = 3
 
-export type LiveValues = { working: number; pace: number }
+export type LiveValues = { working: number; pace: number; base: number; peak: number; ramp: number }
 
 const runningTurns = new Set<string>()
-let streamedSinceTick = 0
-let tokensPerSecond = 0
-let sentValues: LiveValues = { working: 0, pace: 0 }
-let ticker: ReturnType<EngineInterface['clock']['every']> | undefined
-// Whether the backdrop drawn last was a live look: no ticking or redrawing for the others.
+let lastPace = 0
+let density: StarDensity = DEFAULT_STARS
+let sentValues: LiveValues = liveValues(0, 0)
+// Whether the backdrop drawn last was a live look: no redrawing for the others.
 let isLiveDrawn = false
 
 /** What the shader is told now. */
-export function liveValues(running = runningTurns.size, rate = tokensPerSecond): LiveValues {
-  if (running === 0) return { working: 0, pace: 0 }
-
+export function liveValues(
+  running = runningTurns.size,
+  tokensPerSecond = lastPace,
+  stars: StarDensity = density,
+): LiveValues {
   const steps = PACE_STEPS - 1
+  const pace = running === 0 ? 0 : Math.round(Math.min(tokensPerSecond / FULL_PACE, 1) * steps) / steps
 
-  return { working: 1, pace: Math.round(Math.min(rate / FULL_PACE, 1) * steps) / steps }
+  return { working: running === 0 ? 0 : 1, pace, ...STAR_DENSITIES[stars] }
 }
 
 /** Redraws the backdrop when what the shader is told has changed, and only then. */
 function sendValues($: EngineInterface): void {
   const now = liveValues()
+  const isSame = (Object.keys(now) as (keyof LiveValues)[]).every(name => now[name] === sentValues[name])
 
-  if (now.working === sentValues.working && now.pace === sentValues.pace) return
+  if (isSame) return
 
   sentValues = now
 
   if (isLiveDrawn) $.ui.invalidate('ui.render')
 }
 
-/** Once a second while there is work: fold the last second's tokens into the pace. */
-function tick($: EngineInterface): void {
-  tokensPerSecond = tokensPerSecond * 0.6 + streamedSinceTick * 0.4
-  streamedSinceTick = 0
+/** How thick Starfall's shower grows: the stored density, else the default. A store that fails counts as none. */
+async function storedStars($: EngineInterface): Promise<StarDensity> {
+  try {
+    const stored = await $.store.get(STARS_KEY)
 
-  if (runningTurns.size === 0 && tokensPerSecond < 1) {
-    tokensPerSecond = 0
-    ticker?.cancel()
-    ticker = undefined
+    return isStarDensity(stored) ? stored : DEFAULT_STARS
+  } catch {
+    return DEFAULT_STARS
+  }
+}
+
+/** Keeps a density and tells the shader at once: the look itself stays as it is. */
+async function setStars($: EngineInterface, stars: StarDensity): Promise<string> {
+  try {
+    await $.store.set(STARS_KEY, stars)
+  } catch (error) {
+    return `The star density could not be saved: ${reasonOf(error)}`
   }
 
+  density = stars
+  await update($, starDensity, () => stars)
   sendValues($)
+
+  const now = await read($, applied)
+  const where = now === 'starfall' ? '' : ` It shows on Starfall: /${COMMAND} starfall.`
+
+  return `Starfall now falls ${stars}: ${STAR_NOTES[stars]}.${where}`
+}
+
+function starsList(now: StarDensity): string {
+  return [
+    `How thick Starfall's shower grows while Claude works (now ${now}):`,
+    ...STAR_ORDER.map(stars => `  ${stars === now ? '✓' : ' '} ${stars}: ${STAR_NOTES[stars]}`),
+    `/${COMMAND} stars <kind> picks one, /${COMMAND} stars next steps to the next.`,
+  ].join('\n')
 }
 
 function reasonOf(error: unknown): string {
@@ -431,6 +466,7 @@ export function listText(): string {
     `/${COMMAND} text lists what can sit behind reply text, /${COMMAND} text <kind> picks one, /${COMMAND} text next steps through them.`,
     `/${COMMAND} bubble lists the looks for your own messages, /${COMMAND} bubble <kind> picks one, /${COMMAND} bubble next steps through them.`,
     `/${COMMAND} tools lists the looks for tool call rows, /${COMMAND} tools <kind> picks one, /${COMMAND} tools next steps through them.`,
+    `/${COMMAND} stars lists how thick Starfall's shower grows, /${COMMAND} stars <kind> picks one, /${COMMAND} stars next steps through them.`,
   ].join('\n')
 }
 
@@ -533,6 +569,19 @@ async function runCommand($: EngineInterface, args: string): Promise<string> {
     return tool === '' ? toolList(now) : `No tool row named "${tool}". ${toolList(now)}`
   }
 
+  if (key === 'stars' || key.startsWith('stars-') || key === 'star' || key.startsWith('star-')) {
+    const stars = key.replace(/^stars?-?/, '')
+    const now = await storedStars($)
+
+    if (stars === 'next') {
+      return setStars($, STAR_ORDER[(STAR_ORDER.indexOf(now) + 1) % STAR_ORDER.length] ?? DEFAULT_STARS)
+    }
+
+    if (isStarDensity(stars)) return setStars($, stars)
+
+    return stars === '' ? starsList(now) : `No star density named "${stars}". ${starsList(now)}`
+  }
+
   const variant = variantNamed(name)
 
   return variant === undefined ? `No look named "${name}". ${listText()}` : pick($, variant)
@@ -552,6 +601,9 @@ export const register: Register = on => {
     if (UNPAINTED !== undefined) {
       void $.ui.toast(UNPAINTED)
     }
+
+    density = await storedStars($)
+    sentValues = liveValues()
 
     try {
       const choice = await storedChoice($)
@@ -605,25 +657,35 @@ export const register: Register = on => {
 
   on('turn.start', ($, e, next) => {
     runningTurns.add(e.turnId)
-
-    if (isLiveDrawn) ticker ??= $.clock.every(1000, () => tick($))
-
     sendValues($)
 
     return next(e)
   })
 
-  on('turn.step', async function* (_$, e, next) {
+  on('turn.step', async function* ($, e, next) {
+    const startedAt = await $.clock.now()
+    let tokens = 0
+
     for await (const chunk of next(e)) {
-      if (chunk.kind === 'text' || chunk.kind === 'thinking') streamedSinceTick += chunk.text.length / 4
-      else if (chunk.kind === 'input') streamedSinceTick += chunk.json.length / 4
+      if (chunk.kind === 'text' || chunk.kind === 'thinking') tokens += chunk.text.length / 4
+      else if (chunk.kind === 'input') tokens += chunk.json.length / 4
 
       yield chunk
+    }
+
+    const seconds = ((await $.clock.now()) - startedAt) / 1000
+
+    if (seconds > 0.5) {
+      lastPace = tokens / seconds
+      sendValues($)
     }
   })
 
   on('turn.complete', ($, e, next) => {
     runningTurns.delete(e.turnId)
+
+    if (runningTurns.size === 0) lastPace = 0
+
     sendValues($)
 
     return next(e)
@@ -644,6 +706,8 @@ export const register: Register = on => {
     const bubble = isUserBubble(keptBubble) ? keptBubble : await storedBubble($)
     const keptTool = await read($, toolRow)
     const tool = isToolRow(keptTool) ? keptTool : await storedTool($)
+    const keptStars = await read($, starDensity)
+    const stars = isStarDensity(keptStars) ? keptStars : await storedStars($)
 
     return (
       <Box flexDirection="column" borderStyle="round" paddingX={1} gap="md">
@@ -744,6 +808,29 @@ export const register: Register = on => {
                   const said = await setTool($, kind)
 
                   if (!said.startsWith('Tool rows now use') || said.includes('could not')) {
+                    void $.ui.toast(said)
+                  }
+                }}
+              >
+                {shown}
+              </Button>
+            )
+          })}
+        </Box>
+        <Box flexDirection="row" flexWrap="wrap" gap={1}>
+          <Text dimColor>Starfall</Text>
+          {STAR_ORDER.map(kind => {
+            const word = kind.charAt(0).toUpperCase() + kind.slice(1)
+            const shown = stars === kind ? `✓ ${word}` : word
+
+            return (
+              <Button
+                key={`stars-${kind}`}
+                label={shown}
+                onPress={async () => {
+                  const said = await setStars($, kind)
+
+                  if (!said.startsWith('Starfall now falls') || said.includes('could not')) {
                     void $.ui.toast(said)
                   }
                 }}

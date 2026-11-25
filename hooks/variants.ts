@@ -181,6 +181,34 @@ export function isToolRow(text: unknown): text is ToolRow {
 }
 
 /**
+ * How thick Starfall's shower grows. `base` is stars a second as work begins, `peak` stars a second at the
+ * height of it, `ramp` the seconds of work it takes to get there. Writing fast adds a fifth on top; after
+ * Claude stops, the shower tapers off over about twelve seconds.
+ */
+export const STAR_DENSITIES = {
+  gentle: { base: 0.15, peak: 2, ramp: 240 },
+  steady: { base: 0.3, peak: 5, ramp: 150 },
+  shower: { base: 0.6, peak: 10, ramp: 90 },
+  storm: { base: 1.2, peak: 18, ramp: 45 },
+} as const
+
+export type StarDensity = keyof typeof STAR_DENSITIES
+
+/** One line on each density, for the list. */
+export const STAR_NOTES: Record<StarDensity, string> = {
+  gentle: 'a star every few seconds at first, about two a second after four minutes of work',
+  steady: 'one every three seconds at first, about five a second after two and a half minutes',
+  shower: 'a couple a second soon, about ten a second after a minute and a half',
+  storm: 'a storm within a minute: up to eighteen a second',
+}
+
+export const DEFAULT_STARS: StarDensity = 'steady'
+
+export function isStarDensity(text: unknown): text is StarDensity {
+  return typeof text === 'string' && Object.hasOwn(STAR_DENSITIES, text)
+}
+
+/**
  * The rows every variant shares: a black bubble with a hairline round your own messages,
  * and tool calls as quiet code rows. What sits behind a reply's words is its own setting.
  */
@@ -246,7 +274,7 @@ export const VARIANTS: readonly Variant[] = [
   {
     id: 'starfall',
     title: 'Starfall',
-    blurb: "Starfield's sky, but stars fall only while Claude works, more the faster it writes. Has sound.",
+    blurb: "Starfield's sky, but stars fall only while Claude works, more and more the longer it works. Has sound.",
     scene: starfallSvg,
     sound: SPACE_SOUND,
     isLive: true,
