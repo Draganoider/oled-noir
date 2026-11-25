@@ -11,7 +11,7 @@
   <img alt="MIT license" src="https://img.shields.io/badge/license-MIT-ffffff?style=flat-square&labelColor=000000">
   <img alt="A Claude Code mod" src="https://img.shields.io/badge/Claude%20Code-mod-ffffff?style=flat-square&labelColor=000000">
   <img alt="Made for OLED" src="https://img.shields.io/badge/made%20for-OLED-ffffff?style=flat-square&labelColor=000000">
-  <img alt="Nine looks" src="https://img.shields.io/badge/looks-9-ffffff?style=flat-square&labelColor=000000">
+  <img alt="Ten looks" src="https://img.shields.io/badge/looks-10-ffffff?style=flat-square&labelColor=000000">
 </p>
 
 <p align="center">
@@ -73,13 +73,18 @@ Every look is a pure black page with one slow scene in white light, kept to the 
       <sub>Only stars, drifting at two depths, and now and then a star falls.</sub>
     </td>
     <td width="50%" valign="top">
+      <img src="assets/scenes/starfall.svg" alt="Starfall: the starfield while Claude works, stars falling" width="100%"><br>
+      <b>Starfall</b> · <sub>with sound · live</sub><br>
+      <sub>Starfield's sky, but stars fall only while Claude works, and more of them the faster it writes. At rest the sky is still. <a href="#starfall">How it works</a></sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
       <img src="assets/scenes/full-moon.svg" alt="Full Moon: a full moon with drifting clouds" width="100%"><br>
       <b>Full Moon</b><br>
       <sub>A full moon in the corner, its seas soft gray, a halo breathing round it and thin clouds drifting past.</sub>
     </td>
-  </tr>
-  <tr>
-    <td colspan="2" align="center">
+    <td width="50%" valign="middle" align="center">
       <b>Void</b><br>
       <sub>No scene at all. Every pixel off but the words: the least power, and no motion.</sub>
     </td>
@@ -193,6 +198,20 @@ A fresh install starts on **Starfield**, with **bare** glass, **smoky** text, **
 
 <sub>✦ the default</sub>
 
+## Starfall
+
+Starfall is the one look that answers Claude. Its sky is Starfield's, with no shooting stars of its own; they fall from a small shader the app runs over the scene.
+
+| Claude is | The sky |
+| --- | --- |
+| Waiting for you | Still: only the drifting stars |
+| Working, running a tool | A star falls every eight seconds or so |
+| Writing fast | More stars, up to a little over one a second |
+
+The pace is how fast Claude streams its reply, its thinking and its tool calls, about four characters to a token, smoothed over a few seconds and kept to four steps, so the sky changes a few times a turn rather than with every word. Subagents' work counts too. Stars never cross the box you type in.
+
+The shader needs the desktop or mobile app. With **reduced motion** on, or where the app can't play it, Starfall shows its still sky.
+
 ## Why OLED
 
 On an OLED screen a black pixel is switched off: it draws no power and gives no light. OLED Noir is built around that.
@@ -206,7 +225,7 @@ On an OLED screen a black pixel is switched off: it draws no power and gives no 
 
 ## Sound
 
-**Deep Field**, **Starfield** and **Night Rain** have quiet ambient sound and short cues for a message sent, a turn finished and an error. Sound stays off until you press the speaker in the session's title bar; the menu beside it sets the volume or keeps only the cues. It is made by the app from numbers, not recordings, so the mod ships no audio files.
+**Deep Field**, **Starfield**, **Starfall** and **Night Rain** have quiet ambient sound and short cues for a message sent, a turn finished and an error. Sound stays off until you press the speaker in the session's title bar; the menu beside it sets the volume or keeps only the cues. It is made by the app from numbers, not recordings, so the mod ships no audio files.
 
 ## Comfort and accessibility
 
@@ -242,7 +261,7 @@ Send a message in the session: a new session draws its theme once the first mess
 
 ## Privacy
 
-OLED Noir sends nothing anywhere and reads none of your messages. It stores five words on your computer, through Claude Code: the look, glass, text, bubble and tool row you chose.
+OLED Noir sends nothing anywhere. It stores five words on your computer, through Claude Code: the look, glass, text, bubble and tool row you chose. For Starfall it counts how many characters Claude streams, to set the pace: it keeps only that running count, in memory, never the words themselves.
 
 ## Develop
 
@@ -256,6 +275,7 @@ oled-noir/
 │   ├── register.tsx       /noir, the card, and setting the theme
 │   ├── variants.ts        the looks and every setting's choices
 │   ├── scenes.ts          the animated scenes, as SVG built from code
+│   ├── starfall.ts        Starfall's falling stars, a shader the app runs on the GPU
 │   ├── make-colors.js     the color palette builder from Claude Code's plugin kit
 │   └── noir.test.tsx      tests
 ├── types/index.d.ts       the mod's state contract

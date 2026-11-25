@@ -14,6 +14,7 @@ import {
   murmurationSvg,
   nightRainSvg,
   oscilloscopeSvg,
+  starfallSvg,
   starfieldSvg,
   topographySvg,
 } from './scenes'
@@ -26,6 +27,8 @@ export type Variant = {
   scene?: () => string
   sound?: ThemeSound
   style?: Pick<ThemeStyle, 'Text' | 'Heading'>
+  /** True when the scene answers Claude's work: a shader over it, told when Claude works and how fast. */
+  isLive?: boolean
 }
 
 /**
@@ -239,6 +242,14 @@ export const VARIANTS: readonly Variant[] = [
     blurb: 'Only stars, drifting at two depths, and now and then a star falls. Has sound.',
     scene: starfieldSvg,
     sound: SPACE_SOUND,
+  },
+  {
+    id: 'starfall',
+    title: 'Starfall',
+    blurb: "Starfield's sky, but stars fall only while Claude works, more the faster it writes. Has sound.",
+    scene: starfallSvg,
+    sound: SPACE_SOUND,
+    isLive: true,
   },
   {
     id: 'full-moon',

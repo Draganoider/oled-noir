@@ -2,6 +2,12 @@
 
 All notable changes to OLED Noir are listed here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/).
 
+## [1.3.0] - 2026-11-24
+
+### Added
+
+- **Starfall**: Starfield's sky, but stars fall only while Claude works, and more of them the faster it writes. A shader draws them; with reduced motion, or where the app can't play it, the sky stays still.
+
 ## [1.2.0] - 2026-11-24
 
 ### Added
@@ -43,6 +49,7 @@ The first public release.
   - `/noir tools`: seven looks for tool call rows.
 - A true-black palette: a `#000000` page, soft white text, and faintly tinted status colors.
 
+[1.3.0]: https://github.com/Draganoider/oled-noir/releases/tag/v1.3.0
 [1.2.0]: https://github.com/Draganoider/oled-noir/releases/tag/v1.2.0
 [1.1.1]: https://github.com/Draganoider/oled-noir/releases/tag/v1.1.1
 [1.1.0]: https://github.com/Draganoider/oled-noir/releases/tag/v1.1.0

@@ -27,6 +27,8 @@ const looks = {
   eclipse: eclipseSvg,
   'deep-field': deepFieldSvg,
   starfield: starfieldSvg,
+  // Starfall's stars fall from a shader the README can't play: its preview is the sky mid-turn.
+  starfall: starfieldSvg,
   'full-moon': fullMoonSvg,
   oscilloscope: oscilloscopeSvg,
   'night-rain': nightRainSvg,
@@ -78,7 +80,7 @@ const banner =
   '<g font-family="Segoe UI, Helvetica Neue, Arial, sans-serif">' +
   '<text x="78" y="196" font-size="88" font-weight="300" letter-spacing="16" fill="#f2f2f2">OLED NOIR</text>' +
   '<text x="82" y="248" font-size="25" fill="#a8a8a8">True-black looks for the Claude desktop app</text>' +
-  '<text x="83" y="300" font-size="14" letter-spacing="4" fill="#5c5c5c">NINE LOOKS · SLOW ANIMATED SCENES · MADE FOR OLED</text>' +
+  '<text x="83" y="300" font-size="14" letter-spacing="4" fill="#5c5c5c">TEN LOOKS · SLOW ANIMATED SCENES · MADE FOR OLED</text>' +
   '</g></svg>'
 
 writeFileSync(join(root, 'assets', 'banner.svg'), banner)

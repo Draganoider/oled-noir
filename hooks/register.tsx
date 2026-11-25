@@ -89,6 +89,62 @@ export function sceneSource(variant: Variant): string | undefined {
   return source
 }
 
+// ---------------------------------------------------------------- Starfall's pace
+//
+// Starfall's stars fall only while Claude works, and more of them the faster it writes. The mod tells its
+// shader two numbers: `working`, 1 while any turn of this session runs (subagents' too), and `pace`, the
+// tokens a second Claude streams, smoothed over a few seconds and cut to four steps so the sky changes
+// a few times a turn rather than on every word. Tokens are counted roughly, four characters each, from
+// the text, thinking and tool input as it streams; a tool running streams nothing, so the pace eases down.
+
+/** Tokens a second that count as full pace. */
+const FULL_PACE = 90
+const PACE_STEPS = 4
+
+export type LiveValues = { working: number; pace: number }
+
+const runningTurns = new Set<string>()
+let streamedSinceTick = 0
+let tokensPerSecond = 0
+let sentValues: LiveValues = { working: 0, pace: 0 }
+let ticker: ReturnType<EngineInterface['clock']['every']> | undefined
+// Whether the backdrop drawn last was a live look: no ticking or redrawing for the others.
+let isLiveDrawn = false
+
+/** What the shader is told now. */
+export function liveValues(running = runningTurns.size, rate = tokensPerSecond): LiveValues {
+  if (running === 0) return { working: 0, pace: 0 }
+
+  const steps = PACE_STEPS - 1
+
+  return { working: 1, pace: Math.round(Math.min(rate / FULL_PACE, 1) * steps) / steps }
+}
+
+/** Redraws the backdrop when what the shader is told has changed, and only then. */
+function sendValues($: EngineInterface): void {
+  const now = liveValues()
+
+  if (now.working === sentValues.working && now.pace === sentValues.pace) return
+
+  sentValues = now
+
+  if (isLiveDrawn) $.ui.invalidate('ui.render')
+}
+
+/** Once a second while there is work: fold the last second's tokens into the pace. */
+function tick($: EngineInterface): void {
+  tokensPerSecond = tokensPerSecond * 0.6 + streamedSinceTick * 0.4
+  streamedSinceTick = 0
+
+  if (runningTurns.size === 0 && tokensPerSecond < 1) {
+    tokensPerSecond = 0
+    ticker?.cancel()
+    ticker = undefined
+  }
+
+  sendValues($)
+}
+
 function reasonOf(error: unknown): string {
   return error instanceof Error ? error.message : String(error)
 }
@@ -531,9 +587,46 @@ export const register: Register = on => {
       return next(e)
     }
 
-    const { Svg } = $.ui.resolve(e)
+    const { Svg, Shader } = $.ui.resolve(e)
+    const scene = <Svg isInteractive alt={`${variant.title}: ${variant.blurb}`} source={source} />
 
-    return <Svg isInteractive alt={`${variant.title}: ${variant.blurb}`} source={source} />
+    isLiveDrawn = variant.isLive === true
+
+    if (!isLiveDrawn) return scene
+
+    sentValues = liveValues()
+
+    return (
+      <Shader module="./starfall.ts" values={sentValues}>
+        {scene}
+      </Shader>
+    )
+  })
+
+  on('turn.start', ($, e, next) => {
+    runningTurns.add(e.turnId)
+
+    if (isLiveDrawn) ticker ??= $.clock.every(1000, () => tick($))
+
+    sendValues($)
+
+    return next(e)
+  })
+
+  on('turn.step', async function* (_$, e, next) {
+    for await (const chunk of next(e)) {
+      if (chunk.kind === 'text' || chunk.kind === 'thinking') streamedSinceTick += chunk.text.length / 4
+      else if (chunk.kind === 'input') streamedSinceTick += chunk.json.length / 4
+
+      yield chunk
+    }
+  })
+
+  on('turn.complete', ($, e, next) => {
+    runningTurns.delete(e.turnId)
+    sendValues($)
+
+    return next(e)
   })
 
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {

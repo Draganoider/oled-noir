@@ -1,7 +1,7 @@
 import { expect, test } from 'claude-code/testing'
 import type { ThemeSetArgs } from 'claude-code'
 
-import { listText, lookOf, sceneSource } from './register'
+import { listText, liveValues, lookOf, sceneSource } from './register'
 import { GLASS_LEVELS, TEXT_BACKINGS, TOOL_ROWS, USER_BUBBLES, VARIANTS } from './variants'
 
 test('every scene is a whole, pure-vector SVG the engine takes', () => {
@@ -176,5 +176,34 @@ test('the backdrop draws the scene the theme names', async ($) => {
   })
 
   expect(await ui.find({ type: 'Svg' })).toBeDefined()
+  expect(await ui.find({ type: 'Shader' })).toBeUndefined()
   await ui.unmount()
+})
+
+test('Starfall draws its still sky under the falling-star shader', async ($) => {
+  const starfall = VARIANTS.find(variant => variant.id === 'starfall')!
+
+  expect(starfall.isLive).toBe(true)
+  // Its own sky has no shooting stars: they come from the shader alone, and only while Claude works.
+  expect(sceneSource(starfall)).not.toContain('df-meteor')
+  expect(sceneSource(VARIANTS.find(variant => variant.id === 'starfield')!)).toContain('df-meteor')
+
+  const ui = await $.ui.mount({
+    plugin: 'oled-noir',
+    component: 'Backdrop',
+    requestId: 'backdrop',
+    surface: 'desktop',
+    props: { scene: 'starfall', plugin: 'oled-noir', glass: false },
+  })
+
+  expect(await ui.find({ type: 'Shader' })).toBeDefined()
+  expect(await ui.find({ type: 'Svg' })).toBeDefined()
+  await ui.unmount()
+})
+
+test('the shader hears nothing at rest, and a pace in four steps while Claude works', () => {
+  expect(liveValues(0, 500)).toEqual({ working: 0, pace: 0 })
+  expect(liveValues(1, 0)).toEqual({ working: 1, pace: 0 })
+  expect(liveValues(1, 45).pace).toBe(2 / 3)
+  expect(liveValues(2, 400)).toEqual({ working: 1, pace: 1 })
 })
