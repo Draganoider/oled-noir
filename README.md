@@ -222,9 +222,11 @@ Subagents' work counts too, and stars never cross the box you type in. How thick
 The pace is how fast Claude streamed its last step, its reply, thinking and tool calls, about four characters to a token. The shader needs the desktop or mobile app. With **reduced motion** on, or where the app can't play it, Starfall shows its still sky.
 
 <details>
-<summary><b>On a 120 or 240 Hz screen</b></summary>
+<summary><b>On a 4K, 120 or 240 Hz screen</b></summary>
 
 The app plays a theme's shader at 60 frames a second at most. So that the falling stars don't step on a faster screen, each star's head is smeared over the distance it covered since the last frame, the way a camera blurs fast motion. The rest of every scene is animated SVG, which that cap doesn't touch.
+
+Every scene is drawn from shapes, not pictures, so it stays sharp at 4K and beyond. The stars are drawn only where they fall, with no texture the size of the window, so a 4K window costs no more than the stars it shows.
 </details>
 
 ## Why OLED

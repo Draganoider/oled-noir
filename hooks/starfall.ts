@@ -63,12 +63,11 @@ const charge: Buffer = buffer({ size: [1, 1], float: 16, filter: 'nearest' }, ()
   return vec4(clamp(mix(falling, rising, v.working), 0, 1), 0, 0, 1)
 })
 
-/** The stars of this frame, added up. */
-const sky = buffer({})
-
+// The stars are drawn straight onto the picture, added over it, with no buffer the size of the window:
+// a 4K window costs only the strips the stars cover, and no texture has to reach its width.
 const fall = shapes(
   // 64 strips of at most about 340 by 10 points cover under a quarter of a window together.
-  { count: 4, instances: SLOTS, cover: 0.3, draw: 'strip', into: sky, blend: 'add', clear: true },
+  { count: 4, instances: SLOTS, cover: 0.3, draw: 'strip', blend: 'add' },
   (vertex, slot) => {
     const build = charge.at(vec2(0, 0)).x
     const rate = mix(v.base * v.working, v.peak, pow(build, 1.4)) * (0.8 + 0.4 * v.pace)
@@ -118,7 +117,10 @@ const fall = shapes(
     // The head, smeared over the last frame's travel, so it moves smoothly between frames.
     const fromHead = max(behind - smear, 0) + min(behind, 0) * -1
     const spark = exp(-(fromHead * fromHead + side * side) / 6)
-    const light = spot.a.w * (streak * 0.8 + spark)
+    // Keep the prompt box clear.
+    const box =
+      step(composer.x, spot.uv.x) * step(spot.uv.x, composer.z) * step(composer.y, spot.uv.y) * step(spot.uv.y, composer.w)
+    const light = min(spot.a.w * (streak * 0.8 + spark), 1) * (1 - box)
 
     return vec4(light, light, light, light)
   },
@@ -126,17 +128,6 @@ const fall = shapes(
 
 export default shader({
   fps: 60,
-  passes: [
-    charge,
-    sky,
-    fall,
-    picture(p => {
-      // Keep the prompt box clear.
-      const box =
-        step(composer.x, p.uv.x) * step(p.uv.x, composer.z) * step(composer.y, p.uv.y) * step(p.uv.y, composer.w)
-      const light = min(sky.sample(p.uv).x, 1) * (1 - box)
-
-      return vec4(light, light, light, light)
-    }),
-  ],
+  // A clear picture first, then the stars added over it.
+  passes: [charge, picture(() => vec4(0, 0, 0, 0)), fall],
 })
