@@ -8,8 +8,11 @@
 // seconds of work and falling away over about twelve once Claude stops, so the shower tapers off
 // rather than snapping out. Nothing is counted in the mod: the charge piles up here, frame by frame.
 //
-// Each star is a thin strip drawn only where it is, 64 at most at once. Every slot has its own period;
-// in each period it lights one star or none, by a fixed hash against the chance the rate gives.
+// Stars fall all the time Claude works, never in gusts with gaps: the rate decides how many slots are
+// lit, not whether a star happens to come. Every slot repeats on the same period, each starting a
+// golden-ratio step after the one before, so however many are lit their stars come evenly spaced. As
+// the rate climbs, the next slot fades in; as it eases, the last one fades out. Each star is a thin
+// strip drawn only where it is.
 //
 // The app plays a shader at 60 frames a second at most. On a faster screen a star would step between
 // frames, so each head is smeared along the ground it covered since the last frame, like a camera's blur.
@@ -44,9 +47,10 @@ import type { Buffer } from 'claude-code/shader'
 
 const v = values({ working: [0, 1], pace: [0, 1], base: [0, 4], peak: [0, 20], ramp: [10, 600] })
 
-const SLOTS = 64
-/** How many slot periods begin each second, on average: SLOTS over the mean period of four seconds. */
-const STARTS_PER_SECOND = 16
+/** Enough for 30 stars a second, past the stormiest setting. */
+const SLOTS = 96
+/** Seconds between one slot's stars: a lit slot starts a star this often. */
+const PERIOD = 3.2
 /** Half a strip's width, in points: room for the glow round the head. */
 const HALF_WIDTH = 5
 
@@ -66,34 +70,35 @@ const charge: Buffer = buffer({ size: [1, 1], float: 16, filter: 'nearest' }, ()
 // The stars are drawn straight onto the picture, added over it, with no buffer the size of the window:
 // a 4K window costs only the strips the stars cover, and no texture has to reach its width.
 const fall = shapes(
-  // 64 strips of at most about 340 by 10 points cover under a quarter of a window together.
-  { count: 4, instances: SLOTS, cover: 0.3, draw: 'strip', blend: 'add' },
+  // At most about 60 strips of up to 340 by 10 points show at once: under a third of a window.
+  { count: 4, instances: SLOTS, cover: 0.4, draw: 'strip', blend: 'add' },
   (vertex, slot) => {
     const build = charge.at(vec2(0, 0)).x
-    const rate = mix(v.base * v.working, v.peak, pow(build, 1.4)) * (0.8 + 0.4 * v.pace)
-    const chance = rate / STARTS_PER_SECOND
+    const rate = mix(v.base * v.working, v.peak, pow(build, 1.4)) * (0.85 + 0.3 * v.pace)
+    // How lit this slot is: the slots below rate × PERIOD fully, the next one in part.
+    const lit = clamp(rate * PERIOD - slot, 0, 1)
 
-    const period = 3 + fract(slot * 0.618) * 2
-    const shifted = time + slot * 2.9
-    const cycle = floor(shifted / period)
-    const age = shifted - cycle * period
+    const shifted = time + fract(slot * 0.618034) * PERIOD
+    const cycle = floor(shifted / PERIOD)
+    const age = shifted - cycle * PERIOD
     const seed = cycle * 7.31 + slot * 1.73
-    const life = 1.2 + hash(seed + 2.1) * 0.8
+    const life = 1.2 + hash(seed + 2.1) * 0.7
     const done = age / life
 
     if (still > 0) return { hide: true }
-    if (hash(seed) >= chance) return { hide: true }
+    if (lit <= 0) return { hide: true }
     if (done > 1) return { hide: true }
 
     // Down and to the left, as Starfield's own shooting stars fall, each a little steeper or flatter.
     const way = vec2(normalize(vec2(-0.846 + (hash(seed + 5.3) - 0.5) * 0.25, -0.533)))
     const across = vec2(-way.y, way.x)
     const speed = 260 + hash(seed + 3.9) * 160
-    const start = vec2(size.x * (0.05 + hash(seed + 0.5) * 1.15), size.y * (0.3 + hash(seed + 1.3) * 0.75))
+    // Every star starts inside the window, so none is spent falling where no one sees it.
+    const start = vec2(size.x * (0.15 + hash(seed + 0.5) * 0.85), size.y * (0.35 + hash(seed + 1.3) * 0.63))
     const head = vec2(start + way * speed * age)
     const tail = min(speed * age, 90 + hash(seed + 6.7) * 120) + 1
     const smear = speed * dt
-    const fade = smoothstep(0, 0.1, done) * (1 - smoothstep(0.65, 1, done))
+    const fade = lit * smoothstep(0, 0.1, done) * (1 - smoothstep(0.65, 1, done))
 
     // A strip from just ahead of the head back to the tail's end: corners 0 and 1 at the front.
     const back = step(2, vertex) * (tail + smear) - (1 - step(2, vertex)) * 6

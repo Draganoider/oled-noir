@@ -2,6 +2,13 @@
 
 All notable changes to OLED Noir are listed here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/).
 
+## [1.3.3] - 2026-11-25
+
+### Changed
+
+- **Starfall** falls the whole time Claude works, evenly spaced, with no gaps: the setting changes how thick the stream is, not whether a star comes. Every kind starts with at least a star a second, and the ceilings are higher (`storm` reaches twenty a second).
+- Every falling star starts inside the window.
+
 ## [1.3.2] - 2026-11-24
 
 ### Changed
@@ -64,6 +71,7 @@ The first public release.
   - `/noir tools`: seven looks for tool call rows.
 - A true-black palette: a `#000000` page, soft white text, and faintly tinted status colors.
 
+[1.3.3]: https://github.com/Draganoider/oled-noir/releases/tag/v1.3.3
 [1.3.2]: https://github.com/Draganoider/oled-noir/releases/tag/v1.3.2
 [1.3.1]: https://github.com/Draganoider/oled-noir/releases/tag/v1.3.1
 [1.3.0]: https://github.com/Draganoider/oled-noir/releases/tag/v1.3.0

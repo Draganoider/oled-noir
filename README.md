@@ -205,19 +205,19 @@ Starfall is the one look that answers Claude. Its sky is Starfield's, with no sh
 | Claude is | The sky |
 | --- | --- |
 | Waiting for you | Still: only the drifting stars |
-| Just starting | A star every few seconds |
-| Working on | More and more stars, the longer it goes |
-| Writing fast | A fifth more on top |
+| Working | Stars falling all the time, evenly, never a gap |
+| Working on | Thicker and thicker, the longer it goes |
+| Writing fast | Up to a sixth more on top |
 | Done | The shower tapers off over about twelve seconds |
 
 Subagents' work counts too, and stars never cross the box you type in. How thick the shower grows is a setting, `/noir stars` (or the **Starfall** row on the card):
 
-| Kind | Grows to |
-| --- | --- |
-| `gentle` | About two stars a second, after four minutes of work |
-| `steady` ✦ | About five a second, after two and a half minutes |
-| `shower` | About ten a second, after a minute and a half |
-| `storm` | Up to eighteen a second, within a minute |
+| Kind | Starts at | Grows to |
+| --- | --- | --- |
+| `gentle` | About one star a second | Three a second, after four minutes of work |
+| `steady` ✦ | One or two a second | Six a second, after two and a half minutes |
+| `shower` | A few a second | Twelve a second, after a minute and a half |
+| `storm` | Four a second | Twenty a second, within a minute |
 
 The pace is how fast Claude streamed its last step, its reply, thinking and tool calls, about four characters to a token. The shader needs the desktop or mobile app. With **reduced motion** on, or where the app can't play it, Starfall shows its still sky.
 

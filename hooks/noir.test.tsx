@@ -220,7 +220,9 @@ test('every density builds from a few stars to many, inside the shader\'s ranges
   for (const { base, peak, ramp } of Object.values(STAR_DENSITIES)) {
     expect(base).toBeGreaterThan(0)
     expect(base).toBeLessThanOrEqual(4)
-    expect(peak).toBeGreaterThan(base * 5)
+    // Always a steady stream from the start, and several times more at the height of the work.
+    expect(base).toBeGreaterThanOrEqual(0.8)
+    expect(peak).toBeGreaterThanOrEqual(base * 3)
     expect(peak).toBeLessThanOrEqual(20)
     expect(ramp).toBeGreaterThanOrEqual(10)
     expect(ramp).toBeLessThanOrEqual(600)
