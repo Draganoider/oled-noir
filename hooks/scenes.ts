@@ -530,3 +530,153 @@ export function murmurationSvg(): string {
 
   return frame(TWINKLE_CSS + css.join(''), body)
 }
+
+// ---------------------------------------------------------------- Full moon
+
+/**
+ * A full moon in the top right corner: its seas soft gray, a halo breathing round it, and thin moonlit
+ * clouds drifting past now and then, dimming it as they cross. The moon itself drifts a little, so its
+ * bright disc never sits on one spot of the panel.
+ */
+export function fullMoonSvg(): string {
+  const cx = 1250
+  const cy = 250
+  const radius = 118
+  const rand = rng(83)
+
+  // The seas of the near side, roughly where they are: [x, y, rx, ry] in moon radii, x east, y south.
+  const seas: [number, number, number, number][] = [
+    [-0.3, -0.4, 0.3, 0.26],
+    [0.18, -0.38, 0.17, 0.17],
+    [0.36, -0.06, 0.22, 0.2],
+    [0.7, -0.3, 0.12, 0.1],
+    [0.55, 0.2, 0.14, 0.2],
+    [0.32, 0.34, 0.1, 0.1],
+    [-0.6, 0.02, 0.28, 0.46],
+    [-0.18, 0.38, 0.2, 0.15],
+    [-0.5, 0.42, 0.11, 0.11],
+    [0, -0.7, 0.42, 0.1],
+    [0, -0.12, 0.16, 0.12],
+    [-0.35, 0.12, 0.2, 0.15],
+  ]
+
+  let maria = ''
+
+  // Each sea is an uneven, smoothed outline drawn five times, a little larger and fainter each time,
+  // so its edge fades instead of stopping.
+  for (const [x, y, rx, ry] of seas) {
+    const corners = 11
+    const wobble = Array.from({ length: corners }, () => 0.72 + rand() * 0.5)
+
+    for (const [grow, opacity] of [[1.18, 0.03], [1.08, 0.04], [0.98, 0.05], [0.87, 0.05], [0.74, 0.05]] as const) {
+      const points = wobble.map((w, i): [number, number] => {
+        const angle = (i / corners) * Math.PI * 2
+
+        return [(x + Math.cos(angle) * rx * w * grow) * radius, (y + Math.sin(angle) * ry * w * grow) * radius]
+      })
+      const middle = (a: [number, number], b: [number, number]): string => `${n((a[0] + b[0]) / 2)} ${n((a[1] + b[1]) / 2)}`
+      const last = points[corners - 1] as [number, number]
+      let d = `M${middle(last, points[0] as [number, number])}`
+
+      points.forEach((point, i) => {
+        d += `Q${n(point[0])} ${n(point[1])} ${middle(point, points[(i + 1) % corners] as [number, number])}`
+      })
+
+      maria += `<path d="${d}Z" fill="#000" fill-opacity="${opacity}"/>`
+    }
+  }
+
+  let craters = ''
+
+  for (let i = 0; i < 46; i += 1) {
+    const angle = rand() * Math.PI * 2
+    const reach = Math.sqrt(rand()) * 0.92
+    const x = Math.cos(angle) * reach * radius
+    // Most craters lie in the bright southern highlands.
+    const y = (Math.sin(angle) * 0.5 + 0.35) * reach * radius
+    const size = 1.2 + rand() ** 2 * 5
+
+    craters +=
+      `<circle cx="${n(x)}" cy="${n(y)}" r="${n(size)}" fill="#fff" fill-opacity="${n(0.1 + rand() * 0.18)}"/>`
+  }
+
+  // Tycho, the bright young crater in the south, with its long faint rays; Copernicus, a smaller bright spot.
+  const tychoX = -0.12 * radius
+  const tychoY = 0.66 * radius
+  let rays = ''
+
+  for (let i = 0; i < 14; i += 1) {
+    const angle = (i / 14) * Math.PI * 2 + (rand() - 0.5) * 0.3
+    const length = radius * (0.35 + rand() * 0.6)
+
+    rays += `<path d="M${n(tychoX)} ${n(tychoY)}L${n(tychoX + Math.cos(angle) * length)} ${n(tychoY + Math.sin(angle) * length)}"/>`
+  }
+
+  const cloud = (seed: number, name: string, y: number): string => {
+    const own = rng(seed)
+    let dark = ''
+    let lit = ''
+
+    for (let i = 0; i < 7; i += 1) {
+      const x = (own() - 0.5) * 380
+      const dy = bell(own) * 9
+      const rx = 70 + own() * 90
+      const ry = 18 + own() * 20
+
+      dark += `<ellipse cx="${n(x)}" cy="${n(dy)}" rx="${n(rx)}" ry="${n(ry)}" fill="url(#fm-shade)"/>`
+      lit += `<ellipse cx="${n(x)}" cy="${n(dy - 2)}" rx="${n(rx * 1.1)}" ry="${n(ry * 1.25)}" fill="url(#fm-lit)"/>`
+    }
+
+    return `<g transform="translate(0 ${y})"><g class="${name}">${dark}${lit}</g></g>`
+  }
+
+  const defs =
+    `<clipPath id="fm-disc"><circle r="${radius}"/></clipPath>` +
+    '<radialGradient id="fm-face" cx=".46" cy=".44" r=".56">' +
+    '<stop offset="0" stop-color="#f4f4f4"/><stop offset=".72" stop-color="#e4e4e4"/>' +
+    '<stop offset="1" stop-color="#b4b4b4"/></radialGradient>' +
+    `<radialGradient id="fm-halo" gradientUnits="userSpaceOnUse" cx="0" cy="0" r="${radius * 4}">` +
+    '<stop offset=".24" stop-color="#fff" stop-opacity=".3"/><stop offset=".3" stop-color="#fff" stop-opacity=".12"/>' +
+    '<stop offset=".5" stop-color="#fff" stop-opacity=".04"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>' +
+    '<radialGradient id="fm-shade">' +
+    '<stop offset="0" stop-color="#000" stop-opacity=".5"/><stop offset=".55" stop-color="#000" stop-opacity=".3"/>' +
+    '<stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient>' +
+    '<radialGradient id="fm-lit">' +
+    '<stop offset="0" stop-color="#c8c8c8" stop-opacity=".14"/><stop offset=".6" stop-color="#c8c8c8" stop-opacity=".06"/>' +
+    '<stop offset="1" stop-color="#c8c8c8" stop-opacity="0"/></radialGradient>'
+
+  const css =
+    TWINKLE_CSS +
+    '.fm-drift{animation:fm-dr 260s ease-in-out infinite alternate}' +
+    '@keyframes fm-dr{from{transform:translate(-26px,10px)}to{transform:translate(26px,-10px)}}' +
+    '.fm-glow{animation:fm-br 12s ease-in-out infinite}' +
+    '@keyframes fm-br{0%,100%{opacity:.78}50%{opacity:1}}' +
+    '.fm-ring{opacity:0;animation:fm-rg 70s ease-in-out infinite}' +
+    '@keyframes fm-rg{0%,100%{opacity:0}50%{opacity:1}}' +
+    '.fm-cloud-a,.fm-cloud-b,.fm-cloud-c{opacity:0}' +
+    '.fm-cloud-a{animation:fm-fly 110s linear -20s infinite}' +
+    '.fm-cloud-b{animation:fm-fly 150s linear -95s infinite}' +
+    '.fm-cloud-c{animation:fm-fly 190s linear -40s infinite}' +
+    '@keyframes fm-fly{0%{opacity:0;transform:translate(560px,0)}10%{opacity:1}' +
+    '85%{opacity:1}100%{opacity:0;transform:translate(-1000px,0)}}' +
+    '@media (max-aspect-ratio: 3/2){.fm-pos{transform:translate(-110px,0)}}' +
+    '@media (max-aspect-ratio: 1/1){.fm-pos{transform:translate(-330px,-20px)}}'
+
+  const body =
+    stars({ count: 95, seed: 89, maxRadius: 1.2, dimmest: 50, avoid: (x, y) => Math.hypot(x - cx, y - cy) < radius * 3.3 }) +
+    `<g class="fm-pos"><g transform="translate(${cx} ${cy})">` +
+    '<g class="fm-drift">' +
+    `<circle class="fm-glow" r="${radius * 4}" fill="url(#fm-halo)"/>` +
+    `<circle class="fm-ring" r="${n(radius * 2.9)}" fill="none" stroke="#fff" stroke-opacity=".05" stroke-width="7"/>` +
+    `<g clip-path="url(#fm-disc)"><circle r="${radius}" fill="url(#fm-face)"/>${maria}${craters}` +
+    `<g stroke="#fff" stroke-opacity=".16" stroke-width="2.2" stroke-linecap="round">${rays}</g>` +
+    `<circle cx="${n(tychoX)}" cy="${n(tychoY)}" r="4.5" fill="#fff"/>` +
+    `<circle cx="${n(-0.3 * radius)}" cy="${n(-0.05 * radius)}" r="3.2" fill="#fff" fill-opacity=".8"/></g>` +
+    '</g>' +
+    cloud(97, 'fm-cloud-a', 10) +
+    cloud(101, 'fm-cloud-b', -150) +
+    cloud(103, 'fm-cloud-c', 120) +
+    '</g></g>'
+
+  return frame(css, body, defs)
+}

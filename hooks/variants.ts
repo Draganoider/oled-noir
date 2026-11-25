@@ -10,6 +10,7 @@ import type {
 import {
   deepFieldSvg,
   eclipseSvg,
+  fullMoonSvg,
   murmurationSvg,
   nightRainSvg,
   oscilloscopeSvg,
@@ -238,6 +239,12 @@ export const VARIANTS: readonly Variant[] = [
     blurb: 'Only stars, drifting at two depths, and now and then a star falls. Has sound.',
     scene: starfieldSvg,
     sound: SPACE_SOUND,
+  },
+  {
+    id: 'full-moon',
+    title: 'Full Moon',
+    blurb: 'A full moon top right, its seas soft gray, a halo breathing round it, thin clouds drifting past.',
+    scene: fullMoonSvg,
   },
   {
     id: 'oscilloscope',
