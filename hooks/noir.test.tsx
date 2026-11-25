@@ -3,6 +3,8 @@ import type { ThemeSetArgs } from 'claude-code'
 
 import { listText, liveValues, lookOf, sceneSource } from './register'
 import {
+  ACCENTS,
+  DEFAULT_ACCENT,
   DEFAULT_STARS,
   GLASS_LEVELS,
   STAR_DENSITIES,
@@ -115,6 +117,24 @@ test('tool rows use the pill by default, and each kind reaches the theme', () =>
 
     expect(look.style?.ToolUse).toEqual(name === 'none' ? {} : { paddingX: 8, ...rule })
   }
+})
+
+test("links keep the app's own blue by default, and every accent builds its own palette", () => {
+  const eclipse = VARIANTS.find(variant => variant.id === 'eclipse')!
+  const fills = new Set<string>()
+
+  expect(DEFAULT_ACCENT).toBe('blue')
+  expect(lookOf(eclipse, false, true).colors?.inputs.dark?.['role-accent-fill']).toBe('#2a78d6')
+
+  for (const accent of Object.keys(ACCENTS) as (keyof typeof ACCENTS)[]) {
+    const dark = lookOf(eclipse, false, true, 'bare', 'smoky', 'outline', 'pill', accent).colors?.inputs.dark
+
+    expect(dark?.['role-accent-fill']).toMatch(/^#[0-9a-f]{6}$/)
+    fills.add(String(dark?.['role-accent-fill']))
+  }
+
+  // Each accent is a color of its own.
+  expect(fills.size).toBe(Object.keys(ACCENTS).length)
 })
 
 test('no glass reaches the theme as false', () => {

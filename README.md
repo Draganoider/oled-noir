@@ -127,13 +127,13 @@ Type **`/noir`** and a card opens above the prompt: every look with a **Try** bu
 | `/noir next` | Steps to the next look |
 | `/noir list` | Names every look and setting |
 | `/noir off` | Turns OLED Noir off (`/noir` brings it back) |
-| `/noir glass` · `text` · `bubble` · `tools` · `stars` | Lists that setting's choices. Add a name to pick one, or `next` to step through them |
+| `/noir glass` · `text` · `bubble` · `tools` · `accent` · `stars` | Lists that setting's choices. Add a name to pick one, or `next` to step through them |
 
 Your choices are kept for every session and every project.
 
 ## Make it yours
 
-A fresh install starts on **Starfield**, with **bare** glass, **smoky** text, **outline** bubbles and **pill** tool rows. Each part can be changed on its own.
+A fresh install starts on **Starfield**, with **bare** glass, **smoky** text, **outline** bubbles, **pill** tool rows and the app's **blue** accent. Each part can be changed on its own.
 
 <details open>
 <summary><b>Panels</b> · <code>/noir glass</code> · the glass the app lays over the scene behind the chat</summary>
@@ -196,6 +196,22 @@ A fresh install starts on **Starfield**, with **bare** glass, **smoky** text, **
 
 </details>
 
+<details open>
+<summary><b>Accent</b> · <code>/noir accent</code> · the color of links, the icons beside them, toggles and focus rings</summary>
+
+| Color | Looks like |
+| --- | --- |
+| `blue` ✦ | The app's own blue: links look as they do without a theme |
+| `white` | Soft white-gray, for a pure black-and-white look |
+| `clay` | Claude's warm clay orange |
+| `violet` | A soft violet |
+| `mint` | A cool mint green |
+| `rose` | A muted rose pink |
+
+The app gives links, toggles and code keywords one shared color, so a theme can't color links apart from the rest.
+
+</details>
+
 <sub>✦ the default</sub>
 
 ## Starfall
@@ -238,7 +254,7 @@ On an OLED screen a black pixel is switched off: it draws no power and gives no 
 - **Light at the edges.** Each scene keeps its subject in the margins, away from the words and the prompt.
 - **Nothing bright stands still.** Every scene drifts, turns or falls, slowly, so no bright shape sits on one spot of the panel for hours.
 - **Void** turns off everything but the words, for the least power of all.
-- **Black and white, with meaning kept.** Red, green and amber stay faintly tinted, so an error or a success still reads at a glance, and links keep the app's own blue.
+- **Black and white, with meaning kept.** Red, green and amber stay faintly tinted, so an error or a success still reads at a glance, and links keep the app's own blue unless you pick another accent.
 
 ## Sound
 
@@ -278,7 +294,7 @@ Send a message in the session: a new session draws its theme once the first mess
 
 ## Privacy
 
-OLED Noir sends nothing anywhere. It stores six words on your computer, through Claude Code: the look, glass, text, bubble, tool row and star density you chose. For Starfall it counts how many characters Claude streams, to set the pace: it keeps only that running count, in memory, never the words themselves.
+OLED Noir sends nothing anywhere. It stores seven words on your computer, through Claude Code: the look, glass, text, bubble, tool row, accent and star density you chose. For Starfall it counts how many characters Claude streams, to set the pace: it keeps only that running count, in memory, never the words themselves.
 
 ## Develop
 

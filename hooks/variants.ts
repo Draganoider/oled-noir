@@ -181,6 +181,38 @@ export function isToolRow(text: unknown): text is ToolRow {
 }
 
 /**
+ * The accent: the one color the app gives links, the icons beside them, toggles, focus rings and code
+ * keywords. A theme can't color links apart from the rest of these. `blue` leaves the app's own; the
+ * others are seeds the palette builder keeps the hue of, setting the lightness itself so each reads on black.
+ */
+export const ACCENTS = {
+  blue: null,
+  white: '#ffffff',
+  clay: '#d97757',
+  violet: '#8b6cf0',
+  mint: '#3fbf8f',
+  rose: '#e0608a',
+} as const satisfies Record<string, string | null>
+
+export type AccentColor = keyof typeof ACCENTS
+
+/** One line on each accent, for the list. */
+export const ACCENT_NOTES: Record<AccentColor, string> = {
+  blue: "the app's own blue: links look as they do without a theme",
+  white: 'soft white-gray, for a pure black-and-white look: links stand out by their underline',
+  clay: "Claude's warm clay orange",
+  violet: 'a soft violet',
+  mint: 'a cool mint green',
+  rose: 'a muted rose pink',
+}
+
+export const DEFAULT_ACCENT: AccentColor = 'blue'
+
+export function isAccentColor(text: unknown): text is AccentColor {
+  return typeof text === 'string' && Object.hasOwn(ACCENTS, text)
+}
+
+/**
  * How thick Starfall's shower grows. Stars fall the whole time Claude works, evenly spaced: `base` stars a
  * second as work begins, `peak` at the height of it, `ramp` the seconds of work it takes to get there.
  * Writing fast adds up to a sixth more; after Claude stops, the shower tapers off over about twelve seconds.

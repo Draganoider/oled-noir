@@ -2,6 +2,12 @@
 
 All notable changes to OLED Noir are listed here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/).
 
+## [1.4.0] - 2026-11-25
+
+### Added
+
+- `/noir accent` picks the color of links, the icons beside them, toggles and focus rings: `blue` (the app's own, the default), `white`, `clay`, `violet`, `mint` or `rose`. The card has an Accent row for it.
+
 ## [1.3.5] - 2026-11-25
 
 ### Changed
@@ -83,6 +89,7 @@ The first public release.
   - `/noir tools`: seven looks for tool call rows.
 - A true-black palette: a `#000000` page, soft white text, and faintly tinted status colors.
 
+[1.4.0]: https://github.com/Draganoider/oled-noir/releases/tag/v1.4.0
 [1.3.5]: https://github.com/Draganoider/oled-noir/releases/tag/v1.3.5
 [1.3.4]: https://github.com/Draganoider/oled-noir/releases/tag/v1.3.4
 [1.3.3]: https://github.com/Draganoider/oled-noir/releases/tag/v1.3.3

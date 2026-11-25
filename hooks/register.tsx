@@ -3,7 +3,10 @@ import type { EngineInterface, Register, ThemeBackdropGlass, ThemeResult, ThemeS
 
 import { makeColors } from './make-colors.js'
 import {
+  ACCENTS,
+  ACCENT_NOTES,
   BUBBLE_NOTES,
+  DEFAULT_ACCENT,
   DEFAULT_BUBBLE,
   DEFAULT_TOOL,
   DEFAULT_GLASS,
@@ -21,6 +24,7 @@ import {
   USER_BUBBLES,
   VARIANTS,
   glassWord,
+  isAccentColor,
   isGlassLevel,
   isStarDensity,
   isTextBacking,
@@ -30,7 +34,7 @@ import {
   styleOf,
   variantNamed,
 } from './variants'
-import type { GlassLevel, StarDensity, TextBacking, ToolRow, UserBubble, Variant } from './variants'
+import type { AccentColor, GlassLevel, StarDensity, TextBacking, ToolRow, UserBubble, Variant } from './variants'
 
 const PLUGIN = 'oled-noir'
 const COMMAND = 'noir'
@@ -41,12 +45,14 @@ const TEXT_KEY = 'text'
 const BUBBLE_KEY = 'bubble'
 const TOOL_KEY = 'tools'
 const STARS_KEY = 'stars'
+const ACCENT_KEY = 'accent'
 const OFF = 'off'
 const GLASS_ORDER = Object.keys(GLASS_LEVELS) as GlassLevel[]
 const TEXT_ORDER = Object.keys(TEXT_BACKINGS) as TextBacking[]
 const BUBBLE_ORDER = Object.keys(USER_BUBBLES) as UserBubble[]
 const TOOL_ORDER = Object.keys(TOOL_ROWS) as ToolRow[]
 const STAR_ORDER = Object.keys(STAR_DENSITIES) as StarDensity[]
+const ACCENT_ORDER = Object.keys(ACCENTS) as AccentColor[]
 
 const isCardOpen = atom({ plugin: 'oled-noir', key: 'isCardOpen' } as const, false)
 const applied = atom({ plugin: 'oled-noir', key: 'applied' } as const, null)
@@ -55,31 +61,57 @@ const textBacking = atom({ plugin: 'oled-noir', key: 'text' } as const, null)
 const userBubble = atom({ plugin: 'oled-noir', key: 'bubble' } as const, null)
 const toolRow = atom({ plugin: 'oled-noir', key: 'tools' } as const, null)
 const starDensity = atom({ plugin: 'oled-noir', key: 'stars' } as const, null)
+const accentColor = atom({ plugin: 'oled-noir', key: 'accent' } as const, null)
 
 // True black for an OLED panel: every surface sits a hair above #000, text is soft white (not pure,
 // which blooms on OLED), and the roles keep just enough hue that red still means trouble. The accent is
-// left as the app's own, so links, the icons beside them and toggles look as they do without a theme.
-const { theme: COLORS, problems } = makeColors({
-  label: 'OLED Noir',
-  id: 'oled-noir',
-  only: 'dark',
-  roles: { danger: '#ff6b6b', success: '#8fd19e', warning: '#e6c77e', pro: '#bdbdbd' },
-  dark: {
-    gray: {
-      anchors: {
-        'surface-0': '#000000',
-        'surface-1': '#0b0b0b',
-        'surface-2': '#121212',
-        'surface-3': '#181818',
-        'text-primary': '#f2f2f2',
-        'text-secondary': '#c4c4c4',
-        'text-muted': '#8f8f8f',
+// a setting: the app's own blue unless another is chosen.
+function paletteFor(accent: AccentColor) {
+  const seed = ACCENTS[accent]
+
+  return makeColors({
+    label: 'OLED Noir',
+    id: 'oled-noir',
+    only: 'dark',
+    roles: {
+      ...(seed !== null && { accent: seed }),
+      danger: '#ff6b6b',
+      success: '#8fd19e',
+      warning: '#e6c77e',
+      pro: '#bdbdbd',
+    },
+    dark: {
+      gray: {
+        anchors: {
+          'surface-0': '#000000',
+          'surface-1': '#0b0b0b',
+          'surface-2': '#121212',
+          'surface-3': '#181818',
+          'text-primary': '#f2f2f2',
+          'text-secondary': '#c4c4c4',
+          'text-muted': '#8f8f8f',
+        },
       },
     },
-  },
-})
+  })
+}
 
+const { problems } = paletteFor(DEFAULT_ACCENT)
 const UNPAINTED = problems.find(line => line.startsWith("Desktop won't paint"))
+
+// Each accent's palette is built once, when it is first asked for.
+const paletteCache = new Map<AccentColor, ReturnType<typeof paletteFor>['theme']>()
+
+export function colorsFor(accent: AccentColor): ReturnType<typeof paletteFor>['theme'] {
+  let colors = paletteCache.get(accent)
+
+  if (colors === undefined) {
+    colors = paletteFor(accent).theme
+    paletteCache.set(accent, colors)
+  }
+
+  return colors
+}
 
 // Scenes are built once per load: each is a long string.
 const sceneCache = new Map<string, string>()
@@ -201,9 +233,10 @@ export function lookOf(
   text: TextBacking = DEFAULT_TEXT,
   bubble: UserBubble = DEFAULT_BUBBLE,
   tool: ToolRow = DEFAULT_TOOL,
+  accent: AccentColor = DEFAULT_ACCENT,
 ): ThemeSetArgs {
   return {
-    colors: COLORS,
+    colors: colorsFor(accent),
     overrideColorScheme: 'dark',
     backdrop:
       variant.scene === undefined
@@ -223,24 +256,25 @@ async function setLook($: EngineInterface, variant: Variant): Promise<ThemeResul
   const text = await storedText($)
   const bubble = await storedBubble($)
   const tool = await storedTool($)
+  const accent = await storedAccent($)
   let failure: unknown
 
   if (variant.sound !== undefined) {
     try {
-      return await $.theme.set(lookOf(variant, true, true, glass, text, bubble, tool))
+      return await $.theme.set(lookOf(variant, true, true, glass, text, bubble, tool, accent))
     } catch (error) {
       failure = error
     }
   }
 
   try {
-    return await $.theme.set(lookOf(variant, false, true, glass, text, bubble, tool))
+    return await $.theme.set(lookOf(variant, false, true, glass, text, bubble, tool, accent))
   } catch (error) {
     failure ??= error
   }
 
   try {
-    return await $.theme.set(lookOf(variant, false, false, glass, text, bubble, tool))
+    return await $.theme.set(lookOf(variant, false, false, glass, text, bubble, tool, accent))
   } catch (error) {
     throw failure ?? error
   }
@@ -402,6 +436,52 @@ async function setTool($: EngineInterface, tool: ToolRow): Promise<string> {
   return said
 }
 
+/** The accent: the stored color, else the default. A store that fails counts as none. */
+async function storedAccent($: EngineInterface): Promise<AccentColor> {
+  try {
+    const stored = await $.store.get(ACCENT_KEY)
+
+    return isAccentColor(stored) ? stored : DEFAULT_ACCENT
+  } catch {
+    return DEFAULT_ACCENT
+  }
+}
+
+/** Keeps an accent and puts the look showing on again with it. */
+async function setAccent($: EngineInterface, accent: AccentColor): Promise<string> {
+  try {
+    await $.store.set(ACCENT_KEY, accent)
+  } catch (error) {
+    return `The accent could not be saved: ${reasonOf(error)}`
+  }
+
+  await update($, accentColor, () => accent)
+
+  const now = await read($, applied)
+  const variant = now === null ? undefined : variantNamed(now)
+  const said = `Links and toggles are now ${accent}: ${ACCENT_NOTES[accent]}.`
+
+  if (variant === undefined) {
+    return `${said} It shows once a look is on.`
+  }
+
+  try {
+    await setLook($, variant)
+  } catch (error) {
+    return `${said} The look could not be set again: ${reasonOf(error)}`
+  }
+
+  return said
+}
+
+function accentList(now: AccentColor): string {
+  return [
+    `The color of links, the icons beside them, toggles and focus rings (now ${now}):`,
+    ...ACCENT_ORDER.map(accent => `  ${accent === now ? '✓' : ' '} ${accent}: ${ACCENT_NOTES[accent]}`),
+    `/${COMMAND} accent <color> picks one, /${COMMAND} accent next steps to the next.`,
+  ].join('\n')
+}
+
 /** The variant the store holds, the default where it holds none, or OFF. */
 async function storedChoice($: EngineInterface): Promise<Variant | typeof OFF> {
   const stored = await $.store.get(CHOICE_KEY)
@@ -467,6 +547,7 @@ export function listText(): string {
     `/${COMMAND} text lists what can sit behind reply text, /${COMMAND} text <kind> picks one, /${COMMAND} text next steps through them.`,
     `/${COMMAND} bubble lists the looks for your own messages, /${COMMAND} bubble <kind> picks one, /${COMMAND} bubble next steps through them.`,
     `/${COMMAND} tools lists the looks for tool call rows, /${COMMAND} tools <kind> picks one, /${COMMAND} tools next steps through them.`,
+    `/${COMMAND} accent lists the colors for links and toggles, /${COMMAND} accent <color> picks one, /${COMMAND} accent next steps through them.`,
     `/${COMMAND} stars lists how thick Starfall's shower grows, /${COMMAND} stars <kind> picks one, /${COMMAND} stars next steps through them.`,
   ].join('\n')
 }
@@ -568,6 +649,19 @@ async function runCommand($: EngineInterface, args: string): Promise<string> {
     if (isToolRow(tool)) return setTool($, tool)
 
     return tool === '' ? toolList(now) : `No tool row named "${tool}". ${toolList(now)}`
+  }
+
+  if (key === 'accent' || key.startsWith('accent-') || key === 'links' || key.startsWith('links-')) {
+    const accent = key.replace(/^(accent|links)-?/, '')
+    const now = await storedAccent($)
+
+    if (accent === 'next') {
+      return setAccent($, ACCENT_ORDER[(ACCENT_ORDER.indexOf(now) + 1) % ACCENT_ORDER.length] ?? DEFAULT_ACCENT)
+    }
+
+    if (isAccentColor(accent)) return setAccent($, accent)
+
+    return accent === '' ? accentList(now) : `No accent named "${accent}". ${accentList(now)}`
   }
 
   if (key === 'stars' || key.startsWith('stars-') || key === 'star' || key.startsWith('star-')) {
@@ -709,6 +803,8 @@ export const register: Register = on => {
     const tool = isToolRow(keptTool) ? keptTool : await storedTool($)
     const keptStars = await read($, starDensity)
     const stars = isStarDensity(keptStars) ? keptStars : await storedStars($)
+    const keptAccent = await read($, accentColor)
+    const accent = isAccentColor(keptAccent) ? keptAccent : await storedAccent($)
 
     return (
       <Box flexDirection="column" borderStyle="round" paddingX={1} gap="md">
@@ -809,6 +905,29 @@ export const register: Register = on => {
                   const said = await setTool($, kind)
 
                   if (!said.startsWith('Tool rows now use') || said.includes('could not')) {
+                    void $.ui.toast(said)
+                  }
+                }}
+              >
+                {shown}
+              </Button>
+            )
+          })}
+        </Box>
+        <Box flexDirection="row" flexWrap="wrap" gap={1}>
+          <Text dimColor>Accent</Text>
+          {ACCENT_ORDER.map(kind => {
+            const word = kind.charAt(0).toUpperCase() + kind.slice(1)
+            const shown = accent === kind ? `✓ ${word}` : word
+
+            return (
+              <Button
+                key={`accent-${kind}`}
+                label={shown}
+                onPress={async () => {
+                  const said = await setAccent($, kind)
+
+                  if (!said.startsWith('Links and toggles are now') || said.includes('could not')) {
                     void $.ui.toast(said)
                   }
                 }}

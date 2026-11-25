@@ -10,7 +10,7 @@
       "name": "oled-noir",
       "source": "./",
       "description": "True-black OLED looks for the Claude desktop app: black and white animated scenes behind the chat.",
-      "version": "1.3.5"
+      "version": "1.4.0"
     }
   ]
 }

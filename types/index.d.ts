@@ -21,6 +21,8 @@ declare module 'claude-code' {
       tools: string | null
       /** How thick Starfall's shower grows, as the card marks it: `gentle`, `steady`, `shower` or `storm`. */
       stars: string | null
+      /** The accent for links and toggles, as the card marks it: `blue`, `white`, `clay`, `violet`, `mint` or `rose`. */
+      accent: string | null
     }
   }
 }
