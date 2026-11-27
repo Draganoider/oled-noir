@@ -1,5 +1,6 @@
 import { expect, test } from 'claude-code/testing'
 import type { ThemeSetArgs } from 'claude-code'
+import type { Plugin } from 'claude-code/testing'
 
 import { listText, liveValues, lookOf, sceneSource } from './register'
 import {
@@ -167,7 +168,7 @@ test('a stored glass level is used, and an unknown one falls back to bare', asyn
   ])
 })
 
-test('the session starts on Starfield with bare glass when nothing was chosen', async ($, on) => {
+test('the session starts on Deep Field with bare glass when nothing was chosen', async ($, on) => {
   const sets: ThemeSetArgs[] = []
 
   on('command.register', () => ({ value: { command: 'noir' } }))
@@ -182,8 +183,94 @@ test('the session starts on Starfield with bare glass when nothing was chosen', 
   await $.session.start({ cwd: '/', surface: 'desktop', isInteractive: true })
 
   expect(sets).toHaveLength(1)
-  expect(sets[0]?.backdrop).toEqual({ scene: 'starfield', glass: GLASS_LEVELS.bare })
+  expect(sets[0]?.backdrop).toEqual({ scene: 'deep-field', glass: GLASS_LEVELS.bare })
   expect(sets[0]?.style?.UserMessage).toBeDefined()
+})
+
+// Stands in for theme-examples, which clears the session's theme when a fireworks show ends.
+const FIREWORKS = {
+  name: 'theme-examples',
+  register(on) {
+    on('command.run', { command: 'fireworks' }, async $ => {
+      const cleared = await $.theme.clear()
+
+      return { text: cleared.isDrawn ? 'drawn' : 'cleared' }
+    })
+  },
+} satisfies Plugin
+
+test("another mod's clear puts the look back instead of leaving a bare window", { plugins: [FIREWORKS] }, async ($, on) => {
+  const sets: ThemeSetArgs[] = []
+  let clears = 0
+
+  on('command.register', () => ({ value: { command: 'noir' } }))
+  on('store.get', (_, e) => ({ value: e.key === 'variant' ? 'night-rain' : undefined }))
+  on('theme.set', (_, e) => {
+    sets.push(e)
+
+    return { value: { isDrawn: true, requestId: 'backdrop' } }
+  })
+  on('theme.clear', () => {
+    clears += 1
+
+    return { value: { isDrawn: false, reason: 'cleared' } }
+  })
+  on('session.start', (_, e) => ({ cwd: e.cwd }))
+
+  await $.session.start({ cwd: '/', surface: 'desktop', isInteractive: true })
+  const answer = await $.command.run({ command: 'fireworks', args: '', origin: { kind: 'composer' }, presentation: { isFullscreen: false, columns: 80 } })
+
+  expect(clears).toBe(0)
+  expect(answer).toMatchObject({ text: 'drawn' })
+  expect(sets).toHaveLength(2)
+  expect(sets[1]?.backdrop).toEqual(sets[0]?.backdrop)
+})
+
+test("with OLED Noir off, another mod's clear goes through", { plugins: [FIREWORKS] }, async ($, on) => {
+  const sets: ThemeSetArgs[] = []
+  let clears = 0
+
+  on('command.register', () => ({ value: { command: 'noir' } }))
+  on('store.get', (_, e) => ({ value: e.key === 'variant' ? 'off' : undefined }))
+  on('theme.set', (_, e) => {
+    sets.push(e)
+
+    return { value: { isDrawn: true, requestId: 'backdrop' } }
+  })
+  on('theme.clear', () => {
+    clears += 1
+
+    return { value: { isDrawn: false, reason: 'cleared' } }
+  })
+  on('session.start', (_, e) => ({ cwd: e.cwd }))
+
+  await $.session.start({ cwd: '/', surface: 'desktop', isInteractive: true })
+  const answer = await $.command.run({ command: 'fireworks', args: '', origin: { kind: 'composer' }, presentation: { isFullscreen: false, columns: 80 } })
+
+  expect(answer).toMatchObject({ text: 'cleared' })
+  expect(sets).toHaveLength(0)
+  expect(clears).toBe(1)
+})
+
+test('/noir off still clears the theme', async ($, on) => {
+  let clears = 0
+
+  on('command.register', () => ({ value: { command: 'noir' } }))
+  on('store.get', () => ({ value: undefined }))
+  on('store.set', () => ({ value: undefined }))
+  on('theme.set', () => ({ value: { isDrawn: true, requestId: 'backdrop' } }))
+  on('theme.clear', () => {
+    clears += 1
+
+    return { value: { isDrawn: false, reason: 'cleared' } }
+  })
+  on('session.start', (_, e) => ({ cwd: e.cwd }))
+
+  await $.session.start({ cwd: '/', surface: 'desktop', isInteractive: true })
+  const answer = await $.command.run({ command: 'noir', args: 'off', origin: { kind: 'composer' }, presentation: { isFullscreen: false, columns: 80 } })
+
+  expect(clears).toBe(1)
+  expect(answer).toMatchObject({ text: expect.stringContaining('OLED Noir is off') })
 })
 
 test('the list names every look', () => {
@@ -248,5 +335,5 @@ test('every density builds from a few stars to many, inside the shader\'s ranges
     expect(ramp).toBeLessThanOrEqual(600)
   }
 
-  expect(DEFAULT_STARS).toBe('steady')
+  expect(DEFAULT_STARS).toBe('shower')
 })

@@ -2,6 +2,16 @@
 
 All notable changes to OLED Noir are listed here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/).
 
+## [1.4.1] - 2026-11-26
+
+### Changed
+
+- A fresh install now starts on Deep Field, and Starfall's shower grows as `shower` by default instead of `steady`.
+
+### Fixed
+
+- The look no longer disappears after another mod's fireworks. `theme-examples` clears the session's theme when a show ends, which wiped OLED Noir's too; now OLED Noir puts its look back. Only `/noir off` takes it away.
+
 ## [1.4.0] - 2026-11-25
 
 ### Added

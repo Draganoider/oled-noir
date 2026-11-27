@@ -234,7 +234,7 @@ export const STAR_NOTES: Record<StarDensity, string> = {
   storm: 'four a second at first, twenty a second within a minute',
 }
 
-export const DEFAULT_STARS: StarDensity = 'steady'
+export const DEFAULT_STARS: StarDensity = 'shower'
 
 export function isStarDensity(text: unknown): text is StarDensity {
   return typeof text === 'string' && Object.hasOwn(STAR_DENSITIES, text)
@@ -353,7 +353,7 @@ export const VARIANTS: readonly Variant[] = [
   },
 ]
 
-export const DEFAULT_VARIANT = 'starfield'
+export const DEFAULT_VARIANT = 'deep-field'
 
 /** Lower case, each run of anything else a hyphen, so "Deep Field" and "deep-field" both find it. */
 export function keyOf(text: string): string {

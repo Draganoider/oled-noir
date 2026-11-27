@@ -714,6 +714,33 @@ export const register: Register = on => {
     return next(e)
   })
 
+  // A session has one theme, and a clear wipes whichever stands. Another mod that clears it (theme-examples does
+  // after a fireworks show or a preview) would leave a bare window, so while OLED Noir is on its look goes back
+  // instead. Only `/noir off`, its own clear, takes the look away.
+  on('theme.clear', async ($, e, next) => {
+    if (next.origin.plugin === PLUGIN) {
+      return next(e)
+    }
+
+    try {
+      const choice = await storedChoice($)
+
+      if (choice === OFF) {
+        return next(e)
+      }
+
+      const set = await setLook($, choice)
+
+      await update($, applied, () => choice.id)
+
+      return { value: set }
+    } catch (error) {
+      await $.ui.log(`could not put its look back after another mod cleared the theme (${reasonOf(error)})`)
+
+      return next(e)
+    }
+  })
+
   on('command.run', { command: COMMAND }, async ($, e) => {
     try {
       return { text: await runCommand($, e.args) }

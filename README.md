@@ -114,7 +114,7 @@ claude plugin install oled-noir --marketplace Draganoider/oled-noir
 New sessions start with it straight away. In a session that was already open, run `/reload-plugins`, then send a message: a new session draws its theme once the first message is sent.
 
 > [!NOTE]
-> A session shows one theme at a time. If you use another theme mod, such as Anthropic's `theme-examples`, turn its theme off first (`/custom-theme off`), or the two take turns.
+> A session shows one theme at a time. If you use another theme mod, such as Anthropic's `theme-examples`, turn its theme off first (`/custom-theme off`), or the two take turns. When another mod clears the theme, as `theme-examples` does after its fireworks, OLED Noir puts its look back, so the window isn't left bare. Only `/noir off` turns it off.
 
 ## Use
 
@@ -133,7 +133,7 @@ Your choices are kept for every session and every project.
 
 ## Make it yours
 
-A fresh install starts on **Starfield**, with **bare** glass, **smoky** text, **outline** bubbles, **pill** tool rows and the app's **blue** accent. Each part can be changed on its own.
+A fresh install starts on **Deep Field**, with **bare** glass, **smoky** text, **outline** bubbles, **pill** tool rows and the app's **blue** accent. Each part can be changed on its own.
 
 <details open>
 <summary><b>Panels</b> · <code>/noir glass</code> · the glass the app lays over the scene behind the chat</summary>
@@ -231,8 +231,8 @@ Subagents' work counts too, and stars never cross the box you type in. How thick
 | Kind | Starts at | Grows to |
 | --- | --- | --- |
 | `gentle` | About one star a second | Three a second, after four minutes of work |
-| `steady` ✦ | One or two a second | Six a second, after two and a half minutes |
-| `shower` | A few a second | Twelve a second, after a minute and a half |
+| `steady` | One or two a second | Six a second, after two and a half minutes |
+| `shower` ✦ | A few a second | Twelve a second, after a minute and a half |
 | `storm` | Four a second | Twenty a second, within a minute |
 
 The pace is how fast Claude streamed its last step, its reply, thinking and tool calls, about four characters to a token. The shader needs the desktop or mobile app. With **reduced motion** on, or where the app can't play it, Starfall shows its still sky.
